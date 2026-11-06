@@ -203,6 +203,20 @@
   .dish-edit .p{color:var(--pink);font-weight:650}
   .dish-edit .x{color:#d9a;font-size:16px;padding:0 4px}
 
+  /* ── 登录分段控件 / 队伍成员 ── */
+  .seg{display:flex;background:#f7ece6;border-radius:14px;padding:4px;margin:14px 0 4px}
+  .seg button{
+    flex:1;padding:9px 0;border-radius:11px;font-size:13.5px;color:var(--ink-2);
+    font-weight:500;transition:.16s;
+  }
+  .seg button.on{background:#fff;color:var(--ink);font-weight:650;box-shadow:0 3px 10px rgba(214,146,120,.16)}
+  .members{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .member{
+    font-size:12.5px;padding:5px 11px;border-radius:999px;
+    background:#fff7f1;border:1px solid var(--line);color:var(--ink);
+  }
+  .member .me{color:var(--pink)}
+
   .toast{
     position:fixed;left:50%;top:76px;transform:translate(-50%,-16px);
     background:rgba(59,43,43,.92);color:#fff;font-size:13px;padding:9px 16px;border-radius:12px;
@@ -383,6 +397,15 @@
 
   <button class="btn-main" id="saveDish">保存</button>
   <button class="btn-ghost" id="cancelDish">取消</button>
+</section>
+
+<!-- 登录 / 队伍弹层 -->
+<div class="sheet-mask" id="loginMask"></div>
+<section class="sheet" id="loginSheet">
+  <h3 id="loginTitle">进我们的小厨房</h3>
+  <div class="sub">起个昵称，创建队伍或者用队伍码加入</div>
+  <div id="loginBody"></div>
+  <button class="btn-ghost" id="loginCancel">先不登录，自己用</button>
 </section>
 
 <!-- 掌勺教程弹层 -->
@@ -644,6 +667,8 @@
     // 跨手机同步
     room: '',
     deviceId: '',
+    me: null,          // 登录身份 {id, nick, avatar}
+    team: null,        // 队伍 {name, members:[{id,nick,avatar,at}], at, createdBy}
     profileAt: 0,
     syncOn: true,
     lastSyncAt: 0,
@@ -660,6 +685,12 @@
       state.deviceId = Math.random().toString(36).slice(2, 10);
       try { localStorage.setItem('cm-device', state.deviceId); } catch {}
     }
+    try {
+      const me = JSON.parse(localStorage.getItem('cm-me') || 'null');
+      if (me && me.nick) state.me = { id: state.deviceId, nick: me.nick, avatar: me.avatar || '🐰' };
+      const team = JSON.parse(localStorage.getItem('cm-team') || 'null');
+      if (team && team.name) state.team = team;
+    } catch {}
     // 邀请链接带 ?room=xxx 时自动加入
     try {
       const q = new URLSearchParams(location.search);
@@ -961,23 +992,31 @@
       </div>
 
       <div class="panel">
-        <h4>两台手机同步</h4>
-        <div class="kv"><span>房间码</span><span style="font-family:monospace;color:#e0536b">${state.room ? esc(state.room) : '未设置'}</span></div>
-        <div class="kv"><span>状态</span><span id="syncStatus" style="color:#8d7a78">${esc(state.syncState)}</span></div>
-        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-          <button class="mini solid" id="syncNew">生成房间码</button>
-          <button class="mini" id="syncCopy">复制邀请链接</button>
-          <button class="mini" id="syncNow">立即同步</button>
-        </div>
-        <div class="field" style="margin-top:10px">
-          <label>对方给了房间码？填在这里加入</label>
-          <input type="text" id="roomInput" placeholder="例如 K3F9QZ" value="${esc(state.room)}" />
-        </div>
-        <button class="btn-ghost" id="roomJoin">加入这个房间</button>
-        <div style="font-size:11.5px;color:#b9a4a1;margin-top:8px">
-          两个人用同一个房间码，订单就能互相看到（走 ntfy 公共通道，5 秒刷新一次）。<br/>
-          订单里不包含任何个人信息，只有菜名和备注。
-        </div>
+        <h4>我们的队伍</h4>
+        ${state.me ? `
+          <div class="kv"><span>我</span><span>${esc(state.me.avatar)} ${esc(state.me.nick)}</span></div>
+          <div class="kv"><span>队伍名</span><span style="color:#e0536b">${esc((state.team && state.team.name) || '—')}</span></div>
+          <div class="kv"><span>队伍码</span><span style="font-family:monospace;letter-spacing:1px">${esc(state.room || '—')}</span></div>
+          <div class="kv"><span>同步状态</span><span id="syncStatus" style="color:#8d7a78">${esc(state.syncState)}</span></div>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <button class="mini solid" id="syncCopy">复制邀请链接</button>
+            <button class="mini" id="syncNow">立即同步</button>
+            <button class="mini" id="teamRename">改队伍名</button>
+            <button class="mini" id="teamLogout" style="color:#e0536b">退出登录</button>
+          </div>
+          <div style="margin-top:12px;font-size:12px;color:#8d7a78">队伍成员 ${teamMembers().length} 人</div>
+          <div class="members">
+            ${teamMembers().map((m) => `<span class="member">${esc(m.avatar || '🐰')} ${esc(m.nick)}${m.id === state.deviceId ? '（我）' : ''}</span>`).join('') || '<span style="color:#b9a4a1;font-size:12px">还没有别人加入，把邀请链接发出去吧</span>'}
+          </div>
+          <div style="font-size:11.5px;color:#b9a4a1;margin-top:10px">
+            同一个队伍里的人，订单 5 秒内互相可见（走 ntfy 公共通道，只传菜名和备注）。
+          </div>
+        ` : `
+          <div style="font-size:13px;color:#8d7a78;line-height:1.7">
+            登录后可以创建自己的队伍，把队伍码或邀请链接发给 TA，两个人的订单就能互相看到。
+          </div>
+          <button class="btn-main" id="loginOpen" style="margin-top:12px">登录 / 创建队伍</button>
+        `}
       </div>
 
       <div class="panel">
@@ -1014,10 +1053,36 @@
 
   function snapshot() {
     return {
-      type: 'snapshot', v: 1, at: Date.now(), device: state.deviceId,
+      type: 'snapshot', v: 2, at: Date.now(), device: state.deviceId,
       profile: state.profile, profileAt: state.profileAt || 0,
+      team: state.team, teamAt: state.team ? state.team.at || 0 : 0,
       orders: state.orders,
     };
+  }
+
+  function mergeTeam(remote) {
+    if (!remote || !remote.name) return false;
+    if (!state.team) { state.team = remote; return true; }
+    let changed = false;
+    if ((remote.at || 0) >= (state.team.at || 0)) {
+      if (remote.name !== state.team.name) { state.team.name = remote.name; changed = true; }
+      state.team.at = remote.at || state.team.at;
+    }
+    const have = new Set((state.team.members || []).map((m) => m.id));
+    state.team.members = state.team.members || [];
+    for (const m of remote.members || []) {
+      if (m && m.id && !have.has(m.id)) { state.team.members.push(m); have.add(m.id); changed = true; }
+      else if (m && m.id) {
+        const local = state.team.members.find((x) => x.id === m.id);
+        if (local && (m.at || 0) > (local.at || 0)) { Object.assign(local, m); changed = true; }
+      }
+    }
+    return changed;
+  }
+
+  function teamMembers() {
+    const list = (state.team && state.team.members) || [];
+    return list.slice().sort((a, b) => (a.at || 0) - (b.at || 0));
   }
 
   function mergeSnapshot(snap) {
@@ -1030,6 +1095,7 @@
       if (!lo) { state.orders.push(ro); changed = true; continue; }
       if ((ro.upd || 0) > (lo.upd || 0)) { Object.assign(lo, ro); changed = true; }
     }
+    if (mergeTeam(snap.team)) changed = true;
     if (snap.profile && (snap.profileAt || 0) > (state.profileAt || 0)) {
       state.profile = { ...state.profile, ...snap.profile };
       state.profileAt = snap.profileAt;
@@ -1046,6 +1112,97 @@
     state.syncState = msg;
     const el = document.getElementById('syncStatus');
     if (el) el.textContent = msg;
+  }
+
+  /* ── 登录 + 队伍 ── */
+  function saveIdentity() {
+    try {
+      localStorage.setItem('cm-me', JSON.stringify(state.me));
+      if (state.team) localStorage.setItem('cm-team', JSON.stringify(state.team));
+      else localStorage.removeItem('cm-team');
+    } catch {}
+  }
+
+  function touchMember() {
+    if (!state.me) return;
+    state.team = state.team || { name: state.me.nick + '的小厨房', members: [], at: Date.now(), createdBy: state.deviceId };
+    state.team.members = state.team.members || [];
+    const i = state.team.members.findIndex((m) => m.id === state.deviceId);
+    const me = { id: state.deviceId, nick: state.me.nick, avatar: state.me.avatar, at: Date.now() };
+    if (i >= 0) state.team.members[i] = me;
+    else state.team.members.push(me);
+    state.team.at = state.team.at || Date.now();
+    saveIdentity();
+  }
+
+  function doCreate(nick, avatar) {
+    state.me = { id: state.deviceId, nick, avatar };
+    state.room = newRoom();
+    state.team = { name: nick + '的小厨房', members: [], at: Date.now(), createdBy: state.deviceId };
+    touchMember();
+    // 用队长昵称当默认称呼
+    if (!state.profileAt) state.profile = { ...state.profile, a: nick, avatarA: avatar };
+    save();
+    saveIdentity();
+    startSync();
+    pushSync();
+    return state.room;
+  }
+
+  function doJoin(code, nick, avatar) {
+    if (!setRoom(code)) return null;
+    state.me = { id: state.deviceId, nick, avatar };
+    state.team = state.team || { name: '我们的小厨房', members: [], at: Date.now(), createdBy: '' };
+    touchMember();
+    save();
+    saveIdentity();
+    startSync();
+    pushSync();
+    return state.room;
+  }
+
+  function doLogout() {
+    state.me = null;
+    state.team = null;
+    state.room = '';
+    try {
+      localStorage.removeItem('cm-me');
+      localStorage.removeItem('cm-team');
+      localStorage.removeItem('cm-room');
+    } catch {}
+    if (syncTimer) { clearInterval(syncTimer); syncTimer = 0; }
+    state.syncState = '未同步';
+  }
+
+  function renderLoginBody() {
+    const avatars = AVATARS.map((a) => `<button type="button" data-lava="${a}" class="${(state.loginAvatar || '🐰') === a ? 'on' : ''}">${a}</button>`).join('');
+    return `
+      <div class="field">
+        <label>你的昵称</label>
+        <input type="text" id="loginNick" placeholder="比如 小宝" maxlength="8" value="${esc(state.me ? state.me.nick : '')}" />
+      </div>
+      <div class="field">
+        <label>选个头像</label>
+        <div class="avatar-pick" id="loginAva">${avatars}</div>
+      </div>
+      <div class="seg" id="loginSeg">
+        <button type="button" data-mode="create" class="on">创建队伍</button>
+        <button type="button" data-mode="join">加入队伍</button>
+      </div>
+      <div class="field" id="joinWrap" hidden>
+        <label>队伍码（对方给你的 6 位）</label>
+        <input type="text" id="loginCode" placeholder="例如 336AEX" value="${esc(state.pendingJoin || '')}" />
+      </div>
+      <button class="btn-main" id="loginGo">进厨房</button>`;
+  }
+
+  function openLogin() {
+    state.loginAvatar = state.me ? state.me.avatar : (state.profile.avatarA || '🐰');
+    state.loginMode = 'create';
+    $('#loginBody').innerHTML = renderLoginBody();
+    $('#loginTitle').textContent = state.me ? '切换队伍' : '进我们的小厨房';
+    openSheet('#loginSheet');
+    setTimeout(() => { const i = $('#loginNick'); if (i) i.focus(); }, 260);
   }
 
   async function pushSync() {
@@ -1149,12 +1306,14 @@
     if (id === '#orderSheet') $('#orderMask').classList.add('on');
     if (id === '#dishSheet') $('#dishMask').classList.add('on');
     if (id === '#recipeSheet') $('#recipeMask').classList.add('on');
+    if (id === '#loginSheet') $('#loginMask').classList.add('on');
   }
   function closeSheet(id) {
     $(id).classList.remove('on');
     if (id === '#orderSheet') $('#orderMask').classList.remove('on');
     if (id === '#dishSheet') $('#dishMask').classList.remove('on');
     if (id === '#recipeSheet') $('#recipeMask').classList.remove('on');
+    if (id === '#loginSheet') $('#loginMask').classList.remove('on');
   }
 
   /* ─────────────── 掌勺教程 ─────────────── */
@@ -1294,29 +1453,67 @@
       return;
     }
 
-    // 同步按钮
-    if (t.id === 'syncNew') {
-      const c = newRoom();
-      startSync();
-      renderSettings();
-      toast('房间码：' + c + '，把它发给 TA');
+    // 同步 / 队伍
+    if (t.id === 'loginOpen') { openLogin(); return; }
+    if (t.id === 'loginCancel') { closeSheet('#loginSheet'); return; }
+    if (t.dataset.mode) {
+      state.loginMode = t.dataset.mode;
+      document.querySelectorAll('#loginSeg button').forEach((b) => b.classList.toggle('on', b.dataset.mode === state.loginMode));
+      const wrap = document.querySelector('#joinWrap');
+      if (wrap) wrap.hidden = state.loginMode !== 'join';
+      return;
+    }
+    if (t.dataset.lava) {
+      state.loginAvatar = t.dataset.lava;
+      document.querySelectorAll('#loginAva button').forEach((b) => b.classList.toggle('on', b.dataset.lava === state.loginAvatar));
+      return;
+    }
+    if (t.id === 'loginGo') {
+      const nick = (($('#loginNick') || {}).value || '').trim().slice(0, 8);
+      if (!nick) { toast('先起个昵称', true); return; }
+      const code = (($('#loginCode') || {}).value || '').trim();
+      let room = null;
+      if (state.loginMode === 'create') {
+        room = doCreate(nick, state.loginAvatar || '🐰');
+        toast('队伍已创建：' + room + '，把邀请链接发给 TA');
+      } else {
+        if (!code) { toast('填一下对方给你的队伍码', true); return; }
+        room = doJoin(code, nick, state.loginAvatar || '🐰');
+        if (!room) { toast('队伍码不合法', true); return; }
+        toast('已加入队伍 ' + room);
+      }
+      closeSheet('#loginSheet');
+      render();
       return;
     }
     if (t.id === 'syncCopy') {
-      if (!state.room) { toast('先生成房间码', true); return; }
-      copy(roomLink()).then((ok) => toast(ok ? '邀请链接已复制，发给 TA 点开即可' : '复制失败，手动记房间码'));
+      if (!state.room) { toast('还没有队伍码', true); return; }
+      copy(roomLink()).then((ok) => toast(ok ? '邀请链接已复制，发给 TA' : '复制失败，手动发队伍码'));
       return;
     }
     if (t.id === 'syncNow') {
       pullSync(false).then((ch) => { if (!ch) toast('已是最新'); renderSettings(); });
       return;
     }
-    if (t.id === 'roomJoin') {
-      const v = ($('#roomInput').value || '').trim();
-      if (!setRoom(v)) { toast('房间码不合法（字母数字，2-24 位）', true); return; }
-      startSync();
-      renderSettings();
-      toast('已加入房间 ' + state.room);
+    if (t.id === 'teamRename') {
+      const cur = (state.team && state.team.name) || '';
+      const v = prompt('队伍名', cur);
+      if (v && v.trim()) {
+        state.team = state.team || { name: '', members: [], at: 0 };
+        state.team.name = v.trim().slice(0, 16);
+        state.team.at = Date.now();
+        saveIdentity();
+        renderSettings();
+        queuePush();
+        toast('队伍名已改');
+      }
+      return;
+    }
+    if (t.id === 'teamLogout') {
+      if (!confirm('退出登录？订单会留在本机，只是不再同步。')) return;
+      doLogout();
+      render();
+      toast('已退出登录');
       return;
     }
 
@@ -1389,6 +1586,7 @@
   $('#orderMask').addEventListener('click', () => closeSheet('#orderSheet'));
   $('#dishMask').addEventListener('click', () => closeSheet('#dishSheet'));
   $('#recipeMask').addEventListener('click', () => closeSheet('#recipeSheet'));
+  $('#loginMask').addEventListener('click', () => closeSheet('#loginSheet'));
 
   // 菜谱搜索：重渲染后把焦点和光标还回去
   document.addEventListener('input', (e) => {
@@ -1432,6 +1630,7 @@
       items,
       status: 'pending',
       by: state.role,
+      byNick: state.me ? state.me.nick : '',
       upd: Date.now(),
     };
     state.orders.unshift(order);
@@ -1509,7 +1708,12 @@
   try {
     load();
     render();
-    if (state.room) startSync();
+    if (state.me && state.room) {
+      touchMember();      // 保证自己在成员列表里
+      startSync();
+    } else if (state.room) {
+      startSync();
+    }
     if (!lsOk) toast('浏览器禁止了本地存储，这次的改动不会被记住（可能是无痕模式）', true, 5200);
   } catch (err) {
     showFatal(err && err.stack ? err.stack : err);
