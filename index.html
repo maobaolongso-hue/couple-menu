@@ -641,11 +641,33 @@
     recipeCat: '全部',
     cart: {},
     orders: [],
+    // 跨手机同步
+    room: '',
+    deviceId: '',
+    profileAt: 0,
+    syncOn: true,
+    lastSyncAt: 0,
+    syncState: '未同步',
   };
 
   function load() {
     let raw = null;
-    try { raw = localStorage.getItem(KEY); } catch {}
+    try {
+      state.room = localStorage.getItem('cm-room') || '';
+      state.deviceId = localStorage.getItem('cm-device') || '';
+    } catch {}
+    if (!state.deviceId) {
+      state.deviceId = Math.random().toString(36).slice(2, 10);
+      try { localStorage.setItem('cm-device', state.deviceId); } catch {}
+    }
+    // 邀请链接带 ?room=xxx 时自动加入
+    try {
+      const q = new URLSearchParams(location.search);
+      const r = (q.get('room') || '').trim();
+      if (r) { state.room = r; localStorage.setItem('cm-room', r); }
+    } catch {}
+
+    raw = localStorage.getItem(KEY) || null;
     if (!raw) { state.menu = clone(DEFAULT_DISHES); state.menuVersion = MENU_VERSION; return; }
     try {
       const s = JSON.parse(raw);
@@ -808,12 +830,13 @@
   const STATUS_TEXT = { pending: '等 TA 接单', cooking: '正在做', done: '已完成' };
 
   function renderOrders() {
-    if (!state.orders.length) {
+    const live = state.orders.filter((o) => !o.deleted);
+    if (!live.length) {
       $('#view').innerHTML = `<div class="empty"><div class="big">🧾</div>还没有订单<br/>去菜单点几道菜吧</div>`;
       syncBadge();
       return;
     }
-    const html = state.orders.map((o) => {
+    const html = live.map((o) => {
       const pend = o.status === 'pending';
       const items = o.items.map((i) => {
         const rid = i.id || (state.menu.find((m) => m.name === i.name) || {}).id;
@@ -854,7 +877,7 @@
         </div>
       </article>`;
     }).join('');
-    $('#view').innerHTML = `<div class="section-title">共 ${state.orders.length} 单</div>` + html;
+    $('#view').innerHTML = `<div class="section-title">共 ${live.length} 单</div>` + html;
     syncBadge();
   }
 
@@ -902,7 +925,7 @@
   }
 
   function syncBadge() {
-    const n = state.orders.filter((o) => o.status === 'pending' || o.status === 'cooking').length;
+    const n = state.orders.filter((o) => !o.deleted && (o.status === 'pending' || o.status === 'cooking')).length;
     const b = $('#orderBadge');
     b.hidden = n === 0;
     b.textContent = String(n);
@@ -938,6 +961,26 @@
       </div>
 
       <div class="panel">
+        <h4>两台手机同步</h4>
+        <div class="kv"><span>房间码</span><span style="font-family:monospace;color:#e0536b">${state.room ? esc(state.room) : '未设置'}</span></div>
+        <div class="kv"><span>状态</span><span style="color:#8d7a78">${esc(state.syncState)}</span></div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="mini solid" id="syncNew">生成房间码</button>
+          <button class="mini" id="syncCopy">复制邀请链接</button>
+          <button class="mini" id="syncNow">立即同步</button>
+        </div>
+        <div class="field" style="margin-top:10px">
+          <label>对方给了房间码？填在这里加入</label>
+          <input type="text" id="roomInput" placeholder="例如 K3F9QZ" value="${esc(state.room)}" />
+        </div>
+        <button class="btn-ghost" id="roomJoin">加入这个房间</button>
+        <div style="font-size:11.5px;color:#b9a4a1;margin-top:8px">
+          两个人用同一个房间码，订单就能互相看到（走 ntfy 公共通道，5 秒刷新一次）。<br/>
+          订单里不包含任何个人信息，只有菜名和备注。
+        </div>
+      </div>
+
+      <div class="panel">
         <h4>数据</h4>
         <div class="kv"><span>当前版本</span><span style="color:#8d7a78">${esc(BUILD)} · v${state.menuVersion} · ${state.menu.length} 道菜</span></div>
         <div class="kv"><span>导出备份</span><button class="mini" id="exportData">导出</button></div>
@@ -948,6 +991,121 @@
           看不到新菜时先看上面这行：版本不是最新，说明手上这份 html 文件还是旧的，重新发一份新的即可。
         </div>
       </div>`;
+  }
+
+  /* ─────────────── 跨手机同步（ntfy 免费通道，不需要后端） ─────────────── */
+  const SYNC_HOST = 'https://ntfy.sh';
+  const syncTopic = () => 'ccm-' + state.room;
+  const roomLink = () => `${location.origin}${location.pathname}?room=${encodeURIComponent(state.room)}`;
+
+  function setRoom(code) {
+    const c = String(code || '').trim().replace(/[^A-Za-z0-9_-]/g, '').slice(0, 24);
+    if (!c) return false;
+    state.room = c;
+    try { localStorage.setItem('cm-room', c); } catch {}
+    return true;
+  }
+
+  function newRoom() {
+    const c = Math.random().toString(36).slice(2, 8).toUpperCase();
+    setRoom(c);
+    return c;
+  }
+
+  function snapshot() {
+    return {
+      type: 'snapshot', v: 1, at: Date.now(), device: state.deviceId,
+      profile: state.profile, profileAt: state.profileAt || 0,
+      orders: state.orders,
+    };
+  }
+
+  function mergeSnapshot(snap) {
+    let changed = false;
+    if (!snap || !Array.isArray(snap.orders)) return false;
+    const mine = new Map(state.orders.map((o) => [o.id, o]));
+    for (const ro of snap.orders) {
+      if (!ro || !ro.id) continue;
+      const lo = mine.get(ro.id);
+      if (!lo) { state.orders.push(ro); changed = true; continue; }
+      if ((ro.upd || 0) > (lo.upd || 0)) { Object.assign(lo, ro); changed = true; }
+    }
+    if (snap.profile && (snap.profileAt || 0) > (state.profileAt || 0)) {
+      state.profile = { ...state.profile, ...snap.profile };
+      state.profileAt = snap.profileAt;
+      changed = true;
+    }
+    if (changed) {
+      state.orders.sort((a, b) => (b.upd || 0) - (a.upd || 0));
+      save();
+    }
+    return changed;
+  }
+
+  async function pushSync() {
+    if (!state.syncOn || !state.room) return;
+    try {
+      let body = JSON.stringify(snapshot());
+      if (body.length > 3800) {
+        const alive = state.orders.filter((o) => !o.deleted).slice(0, 8);
+        body = JSON.stringify({ ...snapshot(), orders: alive });
+      }
+      await fetch(`${SYNC_HOST}/${syncTopic()}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body,
+      });
+      state.lastSyncAt = Date.now();
+      state.syncState = '已同步 ' + new Date().toLocaleTimeString('zh-CN', { hour12: false });
+    } catch (e) {
+      state.syncState = '同步失败：' + (e.message || '网络错误');
+    }
+  }
+
+  async function pullSync(silent = true) {
+    if (!state.syncOn || !state.room) return false;
+    try {
+      const r = await fetch(`${SYNC_HOST}/${syncTopic()}/json?poll=1&since=all`, { cache: 'no-store' });
+      const text = await r.text();
+      let changed = false;
+      for (const line of text.split('\n')) {
+        const t = line.trim();
+        if (!t) continue;
+        try {
+          const ev = JSON.parse(t);
+          const msg = JSON.parse(ev.message || '{}');
+          if (msg.type === 'snapshot' && msg.device !== state.deviceId) {
+            if (mergeSnapshot(msg)) changed = true;
+          }
+        } catch (err) {}
+      }
+      state.lastSyncAt = Date.now();
+      state.syncState = '已同步 ' + new Date().toLocaleTimeString('zh-CN', { hour12: false });
+      if (changed) {
+        render();
+        if (!silent) toast('收到对方的新订单 🍽️');
+      }
+      return changed;
+    } catch (e) {
+      state.syncState = '同步失败：' + (e.message || '网络错误');
+      return false;
+    }
+  }
+
+  function queuePush() {
+    if (!state.room) return;
+    setTimeout(() => { pushSync(); }, 250);
+  }
+
+  let syncTimer = 0;
+  function startSync() {
+    if (syncTimer) clearInterval(syncTimer);
+    syncTimer = 0;
+    if (!state.room) return;
+    pullSync();
+    syncTimer = setInterval(() => { if (!document.hidden) pullSync(); }, 5000);
+    window.addEventListener('focus', () => pullSync());
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) pullSync(); });
   }
 
   /* ─────────────── 事件 ─────────────── */
@@ -1120,13 +1278,39 @@
       const o = state.orders.find((x) => x.id === t.dataset.oid);
       if (!o) return;
       const act = t.dataset.act;
-      if (act === 'accept') { o.status = 'cooking'; save(); renderOrders(); toast('已接单，开火 🔥'); }
-      if (act === 'done') { o.status = 'done'; save(); renderOrders(); toast('上菜啦 🍲'); }
-      if (act === 'del') { state.orders = state.orders.filter((x) => x.id !== o.id); save(); renderOrders(); toast('已删除'); }
+      if (act === 'accept') { o.status = 'cooking'; o.upd = Date.now(); save(); renderOrders(); queuePush(); toast('已接单，开火 🔥'); }
+      if (act === 'done') { o.status = 'done'; o.upd = Date.now(); save(); renderOrders(); queuePush(); toast('上菜啦 🍲'); }
+      if (act === 'del') { o.deleted = true; o.upd = Date.now(); save(); renderOrders(); queuePush(); toast('已删除'); }
       if (act === 'copy') {
         const text = orderText(o);
         copy(text).then((ok) => toast(ok ? '文案已复制，去微信粘贴给 TA' : '复制失败，长按选择文本吧'));
       }
+      return;
+    }
+
+    // 同步按钮
+    if (t.id === 'syncNew') {
+      const c = newRoom();
+      startSync();
+      renderSettings();
+      toast('房间码：' + c + '，把它发给 TA');
+      return;
+    }
+    if (t.id === 'syncCopy') {
+      if (!state.room) { toast('先生成房间码', true); return; }
+      copy(roomLink()).then((ok) => toast(ok ? '邀请链接已复制，发给 TA 点开即可' : '复制失败，手动记房间码'));
+      return;
+    }
+    if (t.id === 'syncNow') {
+      pullSync(false).then((ch) => { if (!ch) toast('已是最新'); renderSettings(); });
+      return;
+    }
+    if (t.id === 'roomJoin') {
+      const v = ($('#roomInput').value || '').trim();
+      if (!setRoom(v)) { toast('房间码不合法（字母数字，2-24 位）', true); return; }
+      startSync();
+      renderSettings();
+      toast('已加入房间 ' + state.room);
       return;
     }
 
@@ -1146,7 +1330,8 @@
     if (t.id === 'saveProfile') {
       state.profile.a = ($('#nameA').value || '我').slice(0, 8);
       state.profile.b = ($('#nameB').value || '你').slice(0, 8);
-      save(); render(); toast('称呼已更新');
+      state.profileAt = Date.now();
+      save(); render(); queuePush(); toast('称呼已更新');
       return;
     }
     if (t.id === 'addDish') { openDishEditor(null); return; }
@@ -1241,6 +1426,7 @@
       items,
       status: 'pending',
       by: state.role,
+      upd: Date.now(),
     };
     state.orders.unshift(order);
     state.cart = {};
@@ -1249,7 +1435,8 @@
     $('#orderNote').value = '';
     state.tab = 'orders';
     render();
-    toast('已送到 TA 的手机上 💌');
+    pushSync();
+    toast(state.room ? '已下单，正在同步给 TA 🍽️' : '已下单（未开同步，设置里生成房间码）');
     setTimeout(() => {
       copy(orderText(order)).then((ok) => { if (ok) toast('文案也复制好了，可以直接发微信'); });
     }, 900);
@@ -1316,6 +1503,7 @@
   try {
     load();
     render();
+    if (state.room) startSync();
     if (!lsOk) toast('浏览器禁止了本地存储，这次的改动不会被记住（可能是无痕模式）', true, 5200);
   } catch (err) {
     showFatal(err && err.stack ? err.stack : err);

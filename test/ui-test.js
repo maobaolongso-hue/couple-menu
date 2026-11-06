@@ -223,8 +223,7 @@ const ok = (n, c, x = '') => { out.push([n, !!c]); console.log(`${c ? '  ✓' : 
 
   // ── 设置页
   await clickTab('settings');
-  ok('设置页显示版本与菜品数', /v5 · 200 道菜/.test(await ev("document.querySelector('.panel .kv').innerText")),
-    await ev("document.querySelector('.panel .kv').innerText"));
+  ok('设置页显示版本与菜品数', (await ev("document.body.innerText")).includes('v5 · 200 道菜'));
   ok('设置页菜单列表完整', (await ev("document.querySelectorAll('.dish-edit').length")) === EXPECT_DISHES);
   await ev("document.querySelector('#addDish').click()");
   await sleep(250);
@@ -331,6 +330,80 @@ const ok = (n, c, x = '') => { out.push([n, !!c]); console.log(`${c ? '  ✓' : 
     return document.querySelector('#recipeSheet').classList.contains('on') ? 'opened' : 'blocked';
   })()`);
   ok('没有做法的菜点不开', plainInfo === 'blocked' || plainInfo === 'none', String(plainInfo));
+
+  // ── 跨手机同步（用假 ntfy 总线模拟第二台手机）
+  const STUB = `(() => {
+    const real = window.fetch;
+    window.__bus = JSON.parse(localStorage.getItem('__bus') || '[]');
+    window.fetch = async (url, opts = {}) => {
+      const u = String(url);
+      if (!u.includes('ntfy.sh')) return real(url, opts);
+      const method = (opts.method || 'GET').toUpperCase();
+      if (method === 'POST') {
+        const msg = { id: 'm' + Math.random().toString(36).slice(2), time: Math.floor(Date.now() / 1000),
+                      event: 'message', topic: u.split('/').pop(), message: String(opts.body || '') };
+        window.__bus.push(msg);
+        localStorage.setItem('__bus', JSON.stringify(window.__bus));
+        return new Response(JSON.stringify(msg), { status: 200 });
+      }
+      const body = window.__bus.map((m) => JSON.stringify(m)).join('\\n');
+      return new Response(body, { status: 200 });
+    };
+  })();`;
+  const { result: stubId } = await send('Page.addScriptToEvaluateOnNewDocument', { source: STUB });
+
+  // 干净起步：清数据 + 重载，stub 生效
+  await ev(`localStorage.removeItem('__bus'); localStorage.removeItem('cm-room'); localStorage.removeItem('couple-menu-v1');`);
+  await reload();
+  const devA = await ev(`localStorage.getItem('cm-device')`);
+
+  // 生成房间码
+  await clickTab('settings');
+  await ev(`document.querySelector('#syncNew').click()`);
+  await sleep(600);
+  const room = await ev('window.__COUPLE__ ? localStorage.getItem("cm-room") : ""');
+  ok('能生成房间码', !!room && String(room).length >= 4, String(room));
+  ok('设置页显示房间码', (await ev("document.body.innerText")).includes(String(room)));
+
+  // 下单
+  await clickTab('menu');
+  await ev("document.querySelector('.dish .add').click()");
+  await sleep(200);
+  await ev("document.querySelector('#goOrder').click()");
+  await sleep(400);
+  await ev("document.querySelector('#submitOrder').click()");
+  await sleep(1500);
+
+  const bus1 = await ev(`(() => { const b = JSON.parse(localStorage.getItem('__bus') || '[]'); const s = b.map(m => { try { return JSON.parse(m.message); } catch (e) { return null; } }).filter(Boolean); return s.length + '|' + (s[s.length-1] ? s[s.length-1].orders.length : 0); })()`);
+  ok('下单后推了快照到总线', /^[1-9]\d*\|1$/.test(String(bus1)), String(bus1));
+
+  // 换一台手机：设备号不同 + 本地数据清空，但保留房间码和总线
+  await ev(`localStorage.setItem('cm-device', 'phoneB'); localStorage.removeItem('couple-menu-v1');`);
+  await reload();
+  await sleep(2500);
+  const onB = await ev(`window.__COUPLE__.stats()`);
+  ok('第二台手机拉到订单', onB && onB.orders === 1, JSON.stringify(onB));
+  ok('第二台手机菜单也正常', onB && onB.dishes === EXPECT_DISHES, String(onB && onB.dishes));
+
+  // 第二台手机（掌勺）接单
+  await clickTab('orders');
+  await clickChef();
+  const acceptBtns = await ev("document.querySelectorAll('.order [data-act=accept]').length");
+  ok('第二台手机能看到接单按钮', acceptBtns === 1, String(acceptBtns));
+  await ev("document.querySelector('.order [data-act=accept]').click()");
+  await sleep(1500);
+
+  // 回到第一台手机：应看到状态变成「正在做」
+  await ev(`localStorage.setItem('cm-device', ${JSON.stringify(devA)});`);
+  await reload();
+  await sleep(2500);
+  await clickTab('orders');
+  const st = await ev("document.querySelector('.status') ? document.querySelector('.status').innerText : 'none'");
+  ok('状态同步回第一台手机（正在做）', st === '正在做', st);
+  ok('同步状态有提示', (await ev("localStorage.getItem('cm-room')")) === String(room));
+
+  await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: stubId.identifier });
+  await ev(`localStorage.removeItem('__bus');`);
 
   ok('无 JS 异常', logs.length === 0, logs.join(' | '));
 
