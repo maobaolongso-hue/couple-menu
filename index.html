@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<meta name="theme-color" content="#fff6ef" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="我们的小厨房" />
+<meta name="format-detection" content="telephone=no" />
+<title>我们的小厨房 · 情侣电子菜单</title>
+<style>
+  :root{
+    --bg:#fff6ef;
+    --card:#ffffff;
+    --ink:#3b2b2b;
+    --ink-2:#8d7a78;
+    --pink:#ff6b81;
+    --pink-soft:#ffe3e7;
+    --peach:#ffb38a;
+    --cream:#fff1e4;
+    --line:#f2e2da;
+    --ok:#3fbf8f;
+    --shadow:0 10px 30px rgba(214,146,120,.14);
+    --radius:20px;
+    --tab-h:64px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(1200px 500px at 10% -10%, #ffe9ef 0%, transparent 60%),
+      radial-gradient(900px 400px at 100% 0%, #fff1dd 0%, transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+    font-size:15px;line-height:1.6;
+    overscroll-behavior-y:none;
+  }
+  button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer}
+  input,textarea,select{font-family:inherit;font-size:15px;color:var(--ink)}
+
+  #app{max-width:520px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;position:relative}
+
+  /* ── 顶栏 ── */
+  .topbar{
+    position:sticky;top:0;z-index:20;
+    padding:calc(12px + env(safe-area-inset-top)) 16px 12px;
+    display:flex;align-items:center;gap:10px;
+    backdrop-filter:blur(14px);
+    background:linear-gradient(#fff6efee,#fff6efcc);
+  }
+  .brand{display:flex;align-items:center;gap:8px;font-weight:700;letter-spacing:.4px;min-width:0}
+  .brand span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--peach));box-shadow:0 0 0 4px #ffe3e7}
+  .who{margin-left:auto;display:flex;background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px;box-shadow:var(--shadow)}
+  .who button{padding:5px 12px;border-radius:999px;font-size:12.5px;color:var(--ink-2);transition:.18s}
+  .who button.on{background:linear-gradient(135deg,var(--pink),#ff8fa0);color:#fff;font-weight:600}
+  .hello{padding:0 16px 6px;color:var(--ink-2);font-size:13px}
+  .hello b{color:var(--ink)}
+
+  /* ── 菜单 ── */
+  main{flex:1;padding-bottom:calc(var(--tab-h) + 96px)}
+  .cats{
+    position:sticky;top:58px;z-index:15;display:flex;gap:8px;overflow-x:auto;
+    padding:6px 16px 10px;scrollbar-width:none;
+    background:linear-gradient(#fff6ef 70%, transparent);
+  }
+  .cats::-webkit-scrollbar{display:none}
+  .cat{
+    flex:0 0 auto;padding:7px 14px;border-radius:999px;font-size:13px;
+    background:#fff;border:1px solid var(--line);color:var(--ink-2);transition:.18s;white-space:nowrap;
+  }
+  .cat.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .cat .n{opacity:.5;font-size:11px;margin-left:4px}
+
+  .section-title{padding:14px 18px 8px;font-size:12.5px;letter-spacing:2px;color:var(--ink-2)}
+
+  .dish{
+    display:flex;gap:12px;align-items:center;
+    background:var(--card);margin:0 14px 10px;padding:12px;
+    border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid #fff;position:relative;overflow:hidden;
+    transition:transform .12s;
+  }
+  .dish:active{transform:scale(.985)}
+  .dish .thumb{
+    width:62px;height:62px;flex:0 0 62px;border-radius:16px;display:grid;place-items:center;
+    font-size:30px;background:linear-gradient(140deg,#fff2e6,#ffe6ec);border:1px solid #fff;
+  }
+  .dish .info{flex:1;min-width:0}
+  .dish .name{font-weight:650;font-size:15.5px;display:flex;align-items:center;gap:6px}
+  .dish .desc{font-size:12.5px;color:var(--ink-2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dish .meta{display:flex;align-items:center;gap:6px;margin-top:6px}
+  .price{color:var(--pink);font-weight:700;font-size:14px}
+  .price small{font-weight:400;font-size:11px;color:var(--ink-2)}
+  .tag{font-size:10.5px;padding:1px 7px;border-radius:999px;background:#fff3e2;color:#c8853c;border:1px solid #ffe6c9}
+  .tag.hot{background:#ffe9ee;color:#e0536b;border-color:#ffd6df}
+  .add{
+    width:32px;height:32px;border-radius:50%;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--pink),#ff8fa0);color:#fff;font-size:19px;line-height:1;
+    box-shadow:0 6px 14px rgba(255,107,129,.35);flex:0 0 32px;
+  }
+  .qty{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+  .qty button{width:26px;height:26px;border-radius:50%;background:#fff;border:1px solid var(--line);display:grid;place-items:center;font-size:15px;color:var(--ink-2)}
+  .qty .v{min-width:16px;text-align:center;font-weight:650;font-size:14px}
+
+  /* ── 购物车条 ── */
+  .cartbar{
+    position:fixed;left:50%;transform:translateX(-50%) translateY(140%);
+    bottom:calc(var(--tab-h) + 12px + env(safe-area-inset-bottom));
+    width:min(492px,calc(100% - 28px));
+    background:var(--ink);color:#fff;border-radius:999px;
+    padding:10px 10px 10px 18px;display:flex;align-items:center;gap:12px;
+    box-shadow:0 14px 34px rgba(59,43,43,.28);z-index:30;
+    transition:transform .28s cubic-bezier(.2,.9,.3,1.2);
+  }
+  .cartbar.show{transform:translateX(-50%) translateY(0)}
+  .cartbar .sum{flex:1;font-size:13px;opacity:.85}
+  .cartbar .sum b{font-size:15px;opacity:1}
+  .cartbar .go{background:linear-gradient(135deg,var(--pink),#ff8fa0);padding:9px 18px;border-radius:999px;font-weight:650;font-size:14px}
+
+  /* ── 底部导航 ── */
+  .tabbar{
+    position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+    width:min(520px,100%);
+    height:calc(var(--tab-h) + env(safe-area-inset-bottom));
+    padding-bottom:env(safe-area-inset-bottom);
+    background:#fffaf6f2;backdrop-filter:blur(16px);border-top:1px solid var(--line);
+    display:flex;z-index:40;
+  }
+  .tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;color:#b9a4a1;transition:.15s}
+  .tabbar button .ico{font-size:19px;line-height:1}
+  .tabbar button.on{color:var(--pink);font-weight:650}
+  .tabbar .badge{
+    position:absolute;transform:translate(14px,-10px);min-width:16px;height:16px;padding:0 4px;
+    background:var(--pink);color:#fff;border-radius:999px;font-size:10px;display:grid;place-items:center;
+  }
+
+  /* ── 弹层 ── */
+  .sheet-mask{position:fixed;inset:0;background:rgba(59,43,43,.34);opacity:0;pointer-events:none;transition:.25s;z-index:50;backdrop-filter:blur(2px)}
+  .sheet-mask.on{opacity:1;pointer-events:auto}
+  .sheet{
+    position:fixed;left:50%;bottom:0;transform:translate(-50%,100%);
+    width:min(520px,100%);background:var(--card);
+    border-radius:24px 24px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));
+    z-index:51;transition:transform .3s cubic-bezier(.2,.9,.3,1.05);
+    max-height:88vh;overflow-y:auto;
+  }
+  .sheet.on{transform:translate(-50%,0)}
+  .sheet h3{margin:0 0 4px;font-size:17px}
+  .sheet .sub{color:var(--ink-2);font-size:12.5px;margin-bottom:12px}
+  .field{margin:12px 0}
+  .field label{display:block;font-size:12.5px;color:var(--ink-2);margin-bottom:6px}
+  .field input[type=text],.field input[type=number],.field textarea,.field select{
+    width:100%;padding:11px 13px;border-radius:14px;border:1px solid var(--line);
+    background:#fffaf7;outline:none;transition:.15s;
+  }
+  .field textarea{min-height:76px;resize:vertical}
+  .field input:focus,.field textarea:focus{border-color:var(--pink);background:#fff}
+  .btn-main{
+    width:100%;padding:14px;border-radius:16px;font-size:15.5px;font-weight:700;color:#fff;
+    background:linear-gradient(135deg,var(--pink),#ff8fa0);
+    box-shadow:0 10px 24px rgba(255,107,129,.32);margin-top:6px;
+  }
+  .btn-ghost{width:100%;padding:12px;border-radius:14px;border:1px solid var(--line);background:#fff;color:var(--ink-2);font-size:14px;margin-top:8px}
+  .row{display:flex;gap:8px}
+  .row>*{flex:1}
+
+  /* ── 订单 ── */
+  .order{
+    background:var(--card);margin:0 14px 12px;border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:14px;border:1px solid #fff;
+  }
+  .order .head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .status{font-size:11px;padding:2px 9px;border-radius:999px;font-weight:650}
+  .status.pending{background:#fff3e2;color:#c8853c}
+  .status.cooking{background:#ffe9ee;color:#e0536b}
+  .status.done{background:#e7f7f0;color:#2f9d75}
+  .order .time{margin-left:auto;font-size:11.5px;color:var(--ink-2)}
+  .order .items{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+  .pill{font-size:12.5px;padding:4px 10px;border-radius:10px;background:#fff7f1;border:1px solid var(--line)}
+  .order .note{font-size:13px;color:var(--ink-2);background:#fff8f5;border-radius:12px;padding:8px 11px;margin-top:8px;border:1px dashed var(--line)}
+  .order .foot{display:flex;align-items:center;gap:8px;margin-top:10px}
+  .order .total{font-weight:700;color:var(--pink);margin-right:auto}
+  .mini{padding:7px 12px;border-radius:11px;font-size:12.5px;background:#fff;border:1px solid var(--line);color:var(--ink-2)}
+  .mini.solid{background:linear-gradient(135deg,var(--pink),#ff8fa0);color:#fff;border:0;font-weight:650}
+
+  .empty{text-align:center;color:var(--ink-2);padding:60px 24px;font-size:13.5px}
+  .empty .big{font-size:44px;margin-bottom:8px}
+
+  /* ── 设置 ── */
+  .panel{background:var(--card);margin:0 14px 14px;border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;border:1px solid #fff}
+  .panel h4{margin:0 0 10px;font-size:14px}
+  .panel .kv{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px}
+  .panel .kv:last-child{border-bottom:0}
+  .avatar-pick{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .avatar-pick button{width:38px;height:38px;border-radius:12px;background:#fff7f1;border:1px solid var(--line);font-size:19px}
+  .avatar-pick button.on{border-color:var(--pink);background:#ffeef1}
+  .dish-edit{display:flex;gap:6px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+  .dish-edit .e{width:30px;height:30px;border-radius:9px;background:#fff7f1;display:grid;place-items:center;font-size:16px}
+  .dish-edit .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dish-edit .p{color:var(--pink);font-weight:650}
+  .dish-edit .x{color:#d9a;font-size:16px;padding:0 4px}
+
+  .toast{
+    position:fixed;left:50%;top:76px;transform:translate(-50%,-16px);
+    background:rgba(59,43,43,.92);color:#fff;font-size:13px;padding:9px 16px;border-radius:12px;
+    opacity:0;pointer-events:none;transition:.22s;z-index:60;
+  }
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+  .toast.bad{background:#c0392b}
+
+  /* ── 做法按钮 / 教程弹层 ── */
+  .howto{
+    font-size:11.5px;padding:2px 8px;border-radius:999px;margin-left:6px;
+    background:#fff4e9;color:#b9752c;border:1px solid #ffe2c4;
+  }
+  .howto:active{transform:scale(.96)}
+  .pill.tap{
+    cursor:pointer;display:inline-flex;align-items:center;gap:4px;
+    background:#fff4e9;border-color:#ffe2c4;color:#8a5a1f;font-family:inherit;
+  }
+  .pill .rt{font-size:10px;padding:0 5px;border-radius:6px;background:#ffd9b0;color:#8a5a1f}
+  .howto-row{
+    display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;padding-top:8px;
+    border-top:1px dashed var(--line);font-size:11.5px;color:var(--ink-2);align-items:center;
+  }
+  .howto-row .mini{font-size:11.5px;padding:4px 9px}
+
+  .r-head{display:flex;align-items:center;gap:12px}
+  .r-emoji{
+    width:52px;height:52px;flex:0 0 52px;border-radius:16px;display:grid;place-items:center;font-size:27px;
+    background:linear-gradient(140deg,#fff2e6,#ffe6ec);border:1px solid #fff;
+  }
+  .r-title{flex:1;min-width:0}
+  .r-title h3{margin:0;font-size:17.5px}
+  .r-title .sub{margin:2px 0 0;font-size:12.5px;color:var(--ink-2)}
+  .r-title .lvl{color:var(--pink)}
+  .r-x{
+    width:30px;height:30px;border-radius:50%;background:#fff7f1;border:1px solid var(--line);
+    color:var(--ink-2);font-size:13px;display:grid;place-items:center;
+  }
+  .r-bar{height:5px;border-radius:99px;background:#f5e7df;margin-top:12px;overflow:hidden}
+  .r-bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--peach),var(--pink));transition:width .25s}
+
+  /* ── 菜谱页 ── */
+  .rx-search{position:relative;margin:2px 14px 8px}
+  .rx-search input{
+    width:100%;padding:11px 38px 11px 14px;border-radius:14px;border:1px solid var(--line);
+    background:#fff;outline:none;font-size:13.5px;box-shadow:var(--shadow);
+  }
+  .rx-search input:focus{border-color:var(--pink)}
+  .rx-clear{
+    position:absolute;right:8px;top:50%;transform:translateY(-50%);
+    width:24px;height:24px;border-radius:50%;background:#f5e7df;color:#8d7a78;font-size:11px;
+  }
+  .rx{
+    display:flex;align-items:center;gap:12px;margin:0 14px 9px;padding:11px 13px;
+    background:var(--card);border:1px solid #fff;border-radius:16px;box-shadow:var(--shadow);
+    transition:transform .12s;
+  }
+  .rx:active{transform:scale(.985)}
+  .rx.plain{opacity:.62;box-shadow:none;background:#fffaf7}
+  .rx-emoji{
+    width:44px;height:44px;flex:0 0 44px;border-radius:13px;display:grid;place-items:center;font-size:22px;
+    background:linear-gradient(140deg,#fff2e6,#ffe6ec);border:1px solid #fff;
+  }
+  .rx-main{flex:1;min-width:0}
+  .rx-name{font-weight:650;font-size:14.8px;display:flex;align-items:center;gap:6px}
+  .rx-cat{
+    font-size:10.5px;font-weight:400;color:#b9a4a1;background:#fff7f1;
+    border:1px solid var(--line);border-radius:6px;padding:0 5px;
+  }
+  .rx-meta{font-size:11.8px;color:var(--ink-2);margin-top:2px}
+  .rx-go{font-size:12px;color:var(--pink);flex:0 0 auto}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .ing{
+    font-size:12.5px;padding:4px 10px;border-radius:10px;
+    background:#fff8f2;border:1px solid var(--line);color:var(--ink);
+  }
+  .steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+  .steps li{
+    display:flex;gap:10px;align-items:flex-start;cursor:pointer;
+    background:#fffaf7;border:1px solid var(--line);border-radius:13px;padding:10px 12px;
+    transition:.15s;
+  }
+  .steps li:active{transform:scale(.99)}
+  .steps li .no{
+    width:20px;height:20px;flex:0 0 20px;border-radius:50%;display:grid;place-items:center;
+    background:#ffe3e7;color:#e0536b;font-size:11.5px;font-weight:700;margin-top:1px;
+  }
+  .steps li .txt{flex:1;font-size:13.5px;line-height:1.6}
+  .steps li.done{background:#f2fbf6;border-color:#cdeedd}
+  .steps li.done .no{background:#d7f2e4;color:#2f9d75}
+  .steps li.done .txt{text-decoration:line-through;color:#9aa8a2}
+  .tip{
+    font-size:12.5px;color:#8a5a1f;background:#fff6e8;border:1px dashed #ffd9b0;
+    border-radius:12px;padding:9px 12px;margin:4px 0 0;line-height:1.6;
+  }
+  .tip:empty{display:none}
+  .fly{position:fixed;pointer-events:none;font-size:14px;color:var(--pink);animation:fly .7s ease-out forwards;z-index:70}
+  @keyframes fly{to{transform:translateY(-46px) scale(1.5);opacity:0}}
+</style>
+</head>
+<body>
+<div id="fatal" hidden style="position:fixed;inset:0;z-index:9999;background:#fff6ef;color:#3b2b2b;padding:28px 20px;overflow:auto;font-size:14px;line-height:1.7">
+  <h3 style="margin:0 0 8px;color:#e0536b">页面没能正常打开</h3>
+  <p style="margin:0 0 12px">把下面这段截图发给我，我就能定位：</p>
+  <pre id="fatalMsg" style="white-space:pre-wrap;word-break:break-all;background:#fff;border:1px solid #f2e2da;border-radius:12px;padding:12px;font-size:12px;color:#8d7a78"></pre>
+  <p style="margin-top:16px;color:#8d7a78">常见原因：浏览器版本太旧、无痕模式、或者文件没传完整。</p>
+</div>
+<div id="app">
+  <header class="topbar">
+    <div class="brand"><span class="dot"></span><span id="brandText">我们的小厨房</span></div>
+    <div class="who" id="whoSwitch">
+      <button data-role="orderer" class="on">点菜</button>
+      <button data-role="chef">掌勺</button>
+    </div>
+  </header>
+
+  <div class="hello" id="hello">今晚想吃点什么呀 🍽️</div>
+
+  <main id="view"></main>
+
+  <div class="cartbar" id="cartbar">
+    <div class="sum" id="cartSum">已选 0 道</div>
+    <button class="go" id="goOrder">去下单</button>
+  </div>
+
+  <nav class="tabbar" id="tabbar">
+    <button data-tab="menu" class="on"><span class="ico">🍲</span>点菜</button>
+    <button data-tab="recipes"><span class="ico">📖</span>菜谱</button>
+    <button data-tab="orders"><span class="ico">🧾</span>订单<span id="orderBadge" class="badge" hidden></span></button>
+    <button data-tab="settings"><span class="ico">⚙️</span>设置</button>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<!-- 下单弹层 -->
+<div class="sheet-mask" id="orderMask"></div>
+<section class="sheet" id="orderSheet">
+  <h3>确认这一单 🍳</h3>
+  <div class="sub">下单后掌勺的人就能在「订单」里看到啦</div>
+  <div id="orderPreview"></div>
+  <div class="field">
+    <label>想对掌勺的人说（可选）</label>
+    <textarea id="orderNote" placeholder="今天想被偏爱一点…"></textarea>
+  </div>
+  <div class="field">
+    <label>大概几点吃</label>
+    <input id="orderTime" type="text" placeholder="比如 19:00" />
+  </div>
+  <button class="btn-main" id="submitOrder">把菜单递给 TA</button>
+  <button class="btn-ghost" id="cancelOrder">再想想</button>
+</section>
+
+<!-- 设置弹层：菜品编辑 -->
+<div class="sheet-mask" id="dishMask"></div>
+<section class="sheet" id="dishSheet">
+  <h3 id="dishTitle">添加一道菜</h3>
+  <div class="field"><label>菜名</label><input type="text" id="dName" placeholder="比如 妈妈的番茄炒蛋" /></div>
+  <div class="field"><label>图标（一个 emoji）</label><input type="text" id="dEmoji" placeholder="🍳" maxlength="4" /></div>
+  <div class="field"><label>一句话描述</label><input type="text" id="dDesc" placeholder="酸甜刚好，配饭两碗" /></div>
+  <div class="field row">
+    <div><label>价格</label><input type="number" id="dPrice" min="0" step="1" placeholder="15" /></div>
+    <div><label>分类</label><select id="dCat"></select></div>
+  </div>
+
+  <div style="border-top:1px dashed var(--line);margin:6px 0 2px;padding-top:10px;font-size:12px;color:#b9a4a1">
+    做法（填了掌勺才看得到教程，可留空）
+  </div>
+  <div class="field row">
+    <div><label>用时（分钟）</label><input type="number" id="dTime" min="1" step="1" placeholder="15" /></div>
+    <div><label>难度</label>
+      <select id="dLv"><option>简单</option><option>中等</option><option>进阶</option></select>
+    </div>
+  </div>
+  <div class="field"><label>食材（用、分隔）</label><input type="text" id="dIng" placeholder="番茄、鸡蛋、盐" /></div>
+  <div class="field"><label>步骤（一行一步）</label><textarea id="dSteps" rows="4" placeholder="鸡蛋打散炒熟盛出&#10;番茄炒出沙&#10;倒回鸡蛋翻匀"></textarea></div>
+  <div class="field"><label>小贴士（可选）</label><input type="text" id="dTip" placeholder="蛋要嫩就早盛出" /></div>
+
+  <button class="btn-main" id="saveDish">保存</button>
+  <button class="btn-ghost" id="cancelDish">取消</button>
+</section>
+
+<!-- 掌勺教程弹层 -->
+<div class="sheet-mask" id="recipeMask"></div>
+<section class="sheet" id="recipeSheet">
+  <div class="r-head">
+    <span class="r-emoji" id="rEmoji">🍳</span>
+    <div class="r-title">
+      <h3 id="rName">菜名</h3>
+      <div class="sub" id="rMeta"></div>
+    </div>
+    <button class="r-x" id="rClose" aria-label="关闭">✕</button>
+  </div>
+  <div class="r-bar" id="rBar"><i></i></div>
+  <div class="field" style="margin-top:12px">
+    <label>食材</label>
+    <div class="chips" id="rIng"></div>
+  </div>
+  <div class="field">
+    <label>步骤 <b id="rProg">0/0</b> <span style="color:#b9a4a1">（点一下打勾）</span></label>
+    <ol class="steps" id="rSteps"></ol>
+  </div>
+  <div class="tip" id="rTip"></div>
+  <button class="btn-main" id="rCopy">复制做法</button>
+  <button class="btn-ghost" id="rClose2">关上，去开火</button>
+</section>
+
+<script>
+(() => {
+  'use strict';
+  /* ─────────────── 数据层 ─────────────── */
+  const KEY = 'couple-menu-v1';
+  const MENU_VERSION = 5; // 改默认菜单时 +1，老用户会自动补齐新菜
+  const BUILD = '2026-11-06'; // 每次出包改这里，用来判断手上是不是最新文件
+  const CATS = ['前菜', '早餐', '拿手菜', '锅物', '汤', '主食', '小吃', '甜品', '饮品', '夜宵'];
+
+  // 200 道菜：每道带做法（ing/steps 用顿号、分号分隔，运行时拆开）
+  const DISHES_RAW = [
+    { id: 'd1', cat: '前菜', emoji: '🥒', name: '凉拌黄瓜', desc: '拍得碎一点，才入味', price: 8, tag: '', r: { t: 8, lv: '简单', ing: '黄瓜、蒜、生抽、香醋、香油、盐', steps: '黄瓜拍裂切段，撒盐腌 5 分钟倒掉水；蒜拍泥加生抽香醋香油调汁；淋上拌匀，冷藏 10 分钟更爽脆', tip: '拍比切更入味，盐别一次放多' } },
+    { id: 'd2', cat: '前菜', emoji: '🫛', name: '拍蒜毛豆', desc: '边剥边聊，越剥越甜', price: 6, tag: '', r: { t: 20, lv: '简单', ing: '毛豆、蒜、盐、八角、花椒', steps: '毛豆剪去两端，水开下锅加盐八角花椒煮 8 分钟；捞出过冰水；蒜拍碎加盐捣成泥，拌进去', tip: '剪口是为了入味，煮完立刻过冰水才绿' } },
+    { id: 'd3', cat: '前菜', emoji: '🍅', name: '番茄沙拉', desc: '切面朝上，撒一点糖', price: 10, tag: '招牌', r: { t: 8, lv: '简单', ing: '番茄、白糖、薄荷、盐', steps: '番茄切厚片摆盘，切面朝上；均匀撒一层白糖和一小撮盐；冷藏 10 分钟，出汁后放薄荷叶', tip: '一点点盐能把甜味吊出来' } },
+    { id: 'd4', cat: '前菜', emoji: '🍄', name: '凉拌木耳', desc: '脆得有声，拌得用心', price: 12, tag: '', r: { t: 15, lv: '简单', ing: '干木耳、蒜、小米辣、生抽、香醋、香菜', steps: '木耳冷水泡 40 分钟，去根撕小朵；水开焯 2 分钟后过冷水；蒜末小米辣生抽香醋香油拌匀', tip: '泡木耳别用热水，会发黏；焯完过冷水才脆' } },
+    { id: 'd5', cat: '前菜', emoji: '🍗', name: '口水鸡', desc: '辣到想喝你的可乐', price: 26, tag: '微辣', r: { t: 35, lv: '中等', ing: '鸡腿、姜葱、花椒、辣椒油、生抽、香醋、花生碎', steps: '鸡腿冷水下锅加姜葱花椒，小火煮 15 分钟关火焖 10 分钟；捞出过冰水，撕成条；辣椒油生抽香醋蒜末调汁淋上，撒花生碎', tip: '冰水这一步别省，鸡皮会紧实弹牙' } },
+    { id: 'd6', cat: '前菜', emoji: '🥚', name: '皮蛋豆腐', desc: '一勺挖到底，别客气', price: 12, tag: '', r: { t: 5, lv: '简单', ing: '内酯豆腐、皮蛋、葱花、生抽、香油', steps: '豆腐倒扣在盘里切块；皮蛋切瓣摆在上面；淋生抽香油，撒葱花和一点白胡椒', tip: '豆腐先用温水泡 2 分钟更好脱模' } },
+    { id: 'd7', cat: '前菜', emoji: '🥜', name: '醋泡花生', desc: '下酒下话，慢慢嚼', price: 8, tag: '', r: { t: 10, lv: '简单', ing: '花生米、香醋、生抽、糖、蒜、小米辣', steps: '花生米冷水泡 4 小时，或开水煮 3 分钟；调醋汁：香醋生抽糖蒜末小米辣；泡 2 小时以上', tip: '泡过夜更入味，越嚼越香' } },
+    { id: 'd8', cat: '前菜', emoji: '🥗', name: '凉拌海带丝', desc: '清清爽爽，像下班的风', price: 10, tag: '', r: { t: 12, lv: '简单', ing: '海带丝、蒜、醋、生抽、辣椒油、白芝麻', steps: '海带丝冲洗两遍，焯水 2 分钟；过冷水沥干；蒜末醋生抽辣椒油拌匀，撒白芝麻', tip: '焯完多冲一遍，去掉黏液才爽口' } },
+    { id: 'd9', cat: '前菜', emoji: '🐖', name: '蒜泥白肉', desc: '涮得薄，蘸料要多', price: 28, tag: '招牌', r: { t: 40, lv: '中等', ing: '五花肉、黄瓜、蒜、生抽、香醋、辣椒油、糖', steps: '五花肉整块冷水下锅，加姜葱料酒小火煮 20 分钟，关火焖 10 分钟；捞出压平放凉，切薄片；黄瓜拍碎垫底，肉片铺上；蒜泥加生抽香醋糖辣椒油调蘸料', tip: '肉要放凉再切，热切一定散' } },
+    { id: 'd10', cat: '前菜', emoji: '🍗', name: '凉拌鸡丝', desc: '撕得越细越好拌', price: 22, tag: '', r: { t: 25, lv: '简单', ing: '鸡胸肉、黄瓜、蒜、芝麻酱、生抽、香醋', steps: '鸡胸冷水下锅加姜葱煮 12 分钟，关火焖 5 分钟；放凉后顺纹撕成丝；黄瓜切丝垫底，芝麻酱生抽香醋蒜末调汁淋上', tip: '焖比一直煮嫩，撕丝比刀切更挂汁' } },
+    { id: 'd11', cat: '早餐', emoji: '🍞', name: '煎蛋吐司', desc: '蛋黄要流，边要焦', price: 10, tag: '', r: { t: 8, lv: '简单', ing: '吐司、鸡蛋、黄油、黑胡椒、盐', steps: '平底锅小火化黄油，吐司两面煎到微焦取出；同锅打蛋，小火煎 2 分钟到蛋白凝固蛋黄半流；盖在吐司上撒盐和黑胡椒', tip: '蛋黄要流就别翻面，盖锅盖 20 秒也行' } },
+    { id: 'd12', cat: '早餐', emoji: '🥣', name: '皮蛋瘦肉粥', desc: '熬到米开花才叫粥', price: 14, tag: '', r: { t: 40, lv: '中等', ing: '大米、皮蛋、瘦肉、姜丝、葱花、白胡椒', steps: '大米洗净加一点点油盐腌 20 分钟；水开下米，小火熬 25 分钟到米开花；瘦肉切丝用盐淀粉抓匀，和皮蛋丁一起下锅再煮 5 分钟；撒姜丝葱花白胡椒', tip: '米先腌过更容易开花，中途别加冷水' } },
+    { id: 'd13', cat: '早餐', emoji: '🥛', name: '豆浆油条', desc: '泡一下再吃，很香', price: 9, tag: '', r: { t: 6, lv: '简单', ing: '热豆浆、油条、白糖', steps: '豆浆煮开（生豆浆必须煮沸 3 分钟）；油条微波 20 秒或复炸 30 秒回脆；撕段泡进豆浆 5 秒就吃', tip: '生豆浆假沸会中毒，煮到真正滚开' } },
+    { id: 'd14', cat: '早餐', emoji: '🥟', name: '小笼包', desc: '先咬个小口，别烫到嘴', price: 16, tag: '招牌', r: { t: 12, lv: '简单', ing: '速冻小笼包、姜丝、香醋、生抽', steps: '蒸锅水开后放入小笼包，垫油纸防粘；中火蒸 8 分钟，关火焖 2 分钟再开盖；姜丝加香醋生抽调汁', tip: '关火焖 2 分钟再开盖，皮不会塌' } },
+    { id: 'd15', cat: '早餐', emoji: '🥪', name: '火腿芝士三明治', desc: '压一压，芝士会拉丝', price: 14, tag: '', r: { t: 10, lv: '简单', ing: '吐司、火腿、芝士片、鸡蛋、生菜、黄油', steps: '吐司一面抹黄油，平底锅小火煎到金黄；依次叠生菜火腿芝士煎蛋；盖上另一片压 30 秒让芝士化开', tip: '用锅铲压着煎，芝士才拉丝' } },
+    { id: 'd16', cat: '早餐', emoji: '🥣', name: '酸奶麦片碗', desc: '早上来不及，就这个', price: 12, tag: '', r: { t: 3, lv: '简单', ing: '酸奶、即食麦片、香蕉、蓝莓、蜂蜜', steps: '酸奶倒碗里；铺麦片和切片香蕉；放几颗蓝莓淋蜂蜜', tip: '麦片最后放，泡久了会软塌' } },
+    { id: 'd17', cat: '早餐', emoji: '🫓', name: '鸡蛋灌饼', desc: '鼓起来那一刻最爽', price: 12, tag: '', r: { t: 15, lv: '中等', ing: '手抓饼皮、鸡蛋、生菜、甜面酱、葱花', steps: '冷冻饼皮不用解冻，小火干锅烙到鼓起；用筷子挑开一个口，灌进打散的蛋液和葱花；两面各烙 1 分钟，刷酱夹生菜', tip: '蛋液里加一点水更好灌，别贪多会漏' } },
+    { id: 'd18', cat: '早餐', emoji: '🥞', name: '葱油饼', desc: '层层起酥才合格', price: 10, tag: '', r: { t: 25, lv: '中等', ing: '面粉、热水、冷水、小葱、盐、油', steps: '面粉用热水烫一半、冷水揉一半，醒 30 分钟；擀薄抹油盐撒葱花，卷起盘成团再擀开；小火两面各烙 3 分钟到金黄', tip: '烫面+冷水面各一半，才会又软又酥' } },
+    { id: 'd19', cat: '拿手菜', emoji: '🍳', name: '番茄炒蛋', desc: '全国统一的第一道菜', price: 15, tag: '招牌', r: { t: 10, lv: '简单', ing: '番茄、鸡蛋、糖、盐、葱花', steps: '鸡蛋加一点盐打散，热锅热油下锅，半凝固就盛出；番茄切块下锅炒出沙，加半勺糖和盐；倒回鸡蛋翻两下，撒葱花', tip: '蛋要嫩就早盛出，回锅只翻两下' } },
+    { id: 'd20', cat: '拿手菜', emoji: '🍗', name: '可乐鸡翅', desc: '收汁收得好，甜到心里', price: 22, tag: '招牌', r: { t: 30, lv: '简单', ing: '鸡翅、可乐、生抽、老抽、姜、料酒', steps: '鸡翅两面划刀，冷水下锅焯 3 分钟捞出擦干；少油煎到两面金黄，加姜片料酒生抽老抽；倒可乐没过鸡翅，中火煮 15 分钟；大火收汁到挂糊', tip: '可乐要没过食材，收汁时别走开' } },
+    { id: 'd21', cat: '拿手菜', emoji: '🥩', name: '红烧排骨', desc: '炖一小时，想一个人', price: 32, tag: '', r: { t: 60, lv: '中等', ing: '排骨、冰糖、生抽、老抽、姜、八角、料酒', steps: '排骨冷水下锅焯水撇沫，捞出冲净；少油下冰糖小火炒到枣红，倒排骨翻匀上色；加姜八角料酒生抽老抽和开水没过，小火炖 40 分钟；大火收汁', tip: '炒糖色变色就下排骨，晚了会苦' } },
+    { id: 'd22', cat: '拿手菜', emoji: '🥦', name: '蒜蓉西兰花', desc: '绿得很有诚意', price: 16, tag: '', r: { t: 12, lv: '简单', ing: '西兰花、蒜、盐、蚝油、淀粉', steps: '西兰花切小朵，盐水泡 10 分钟后焯水 1 分钟，过冷水沥干；蒜末小火炒香；下西兰花大火翻炒，加盐蚝油，薄芡翻匀', tip: '焯水时加几滴油和盐，颜色更绿' } },
+    { id: 'd23', cat: '拿手菜', emoji: '🌶️', name: '麻婆豆腐', desc: '辣一点，你就可以喝我的可乐', price: 18, tag: '微辣', r: { t: 20, lv: '中等', ing: '嫩豆腐、牛肉末、豆瓣酱、花椒粉、蒜苗、淀粉', steps: '豆腐切块，淡盐水泡 5 分钟；小火炒香牛肉末和豆瓣酱出红油，加水烧开；下豆腐小火煮 5 分钟，分三次勾芡；出锅撒花椒粉和蒜苗', tip: '勾芡分三次，汤汁才会抱住豆腐' } },
+    { id: 'd24', cat: '拿手菜', emoji: '🐟', name: '清蒸鲈鱼', desc: '重要日子才舍得开火', price: 38, tag: '隆重', r: { t: 25, lv: '中等', ing: '鲈鱼、姜、葱、蒸鱼豉油、料酒', steps: '鱼两面划刀，抹料酒和盐，肚子里塞姜葱，腌 10 分钟；水开后上锅大火蒸 8 分钟；倒掉盘中腥水，捡掉姜葱，铺新葱丝，淋蒸鱼豉油，泼一勺热油', tip: '蒸鱼的水一定倒掉，那一盘是腥的来源' } },
+    { id: 'd25', cat: '拿手菜', emoji: '🍖', name: '糖醋里脊', desc: '酸甜度按你的心情调', price: 28, tag: '', r: { t: 35, lv: '中等', ing: '里脊、鸡蛋、淀粉、番茄酱、白醋、糖、盐', steps: '里脊切条，用盐料酒腌 10 分钟，裹蛋液和淀粉；油温六成热下锅炸到定型捞出，升高油温复炸 30 秒；番茄酱白醋糖加水煮开勾薄芡，倒入里脊快速翻匀', tip: '复炸一次才酥，酱汁要最后拌' } },
+    { id: 'd26', cat: '拿手菜', emoji: '🍗', name: '宫保鸡丁', desc: '花生要先炒香才脆', price: 24, tag: '微辣', r: { t: 20, lv: '中等', ing: '鸡腿肉、花生米、干辣椒、花椒、葱段、生抽、醋、糖', steps: '鸡腿肉切丁，用生抽料酒淀粉腌 15 分钟；小火炒香花生米盛出；热油下干辣椒花椒葱段爆香，倒鸡丁大火炒变色；倒入生抽醋糖淀粉调的味汁，收浓后拌入花生', tip: '花生最后放，早放就软了' } },
+    { id: 'd27', cat: '拿手菜', emoji: '🥕', name: '鱼香肉丝', desc: '没有鱼，但有我', price: 22, tag: '', r: { t: 20, lv: '中等', ing: '里脊、木耳、胡萝卜、泡椒、蒜、姜、醋、糖', steps: '里脊切丝用盐淀粉抓匀；木耳胡萝卜切丝；泡椒蒜姜末炒香下肉丝大火滑散；下配菜，倒鱼香汁（醋糖生抽淀粉水）炒匀', tip: '糖醋比例 1:1，是鱼香的关键' } },
+    { id: 'd28', cat: '拿手菜', emoji: '🫘', name: '干煸四季豆', desc: '煸到起皮才香', price: 16, tag: '', r: { t: 18, lv: '中等', ing: '四季豆、肉末、干辣椒、花椒、蒜、生抽', steps: '四季豆掐头去尾撕筋，掰段擦干；中火多油煸 6-8 分钟到表皮起皱发白，盛出；剩油炒肉末和干辣椒蒜末；倒回四季豆加生抽翻炒', tip: '四季豆一定煸透，没熟会中毒' } },
+    { id: 'd29', cat: '拿手菜', emoji: '🦐', name: '蒜蓉粉丝虾', desc: '壳替你剥好了', price: 42, tag: '隆重', r: { t: 25, lv: '中等', ing: '大虾、粉丝、蒜、蒸鱼豉油、小米辣、葱花', steps: '粉丝温水泡软铺盘底；虾开背去虾线摆在粉丝上；一半蒜末小火炸金黄，和生蒜末混合，加豉油铺在虾上；大火蒸 6 分钟，撒葱花泼热油', tip: '蒜一半生一半熟，香味才有层次' } },
+    { id: 'd30', cat: '拿手菜', emoji: '🍖', name: '孜然羊肉', desc: '孜然要多，像夜市那家', price: 34, tag: '', r: { t: 20, lv: '中等', ing: '羊腿肉、洋葱、孜然粒、辣椒面、香菜、生抽', steps: '羊肉逆纹切薄片，用生抽料酒淀粉抓匀腌 15 分钟；大火热油下锅快炒到变色盛出；炒香洋葱，倒回羊肉加孜然辣椒面大火翻 30 秒，撒香菜', tip: '全程大火，炒久了就柴' } },
+    { id: 'd31', cat: '拿手菜', emoji: '🍖', name: '红烧肉', desc: '炖到一戳就烂才算合格', price: 36, tag: '招牌', r: { t: 85, lv: '中等', ing: '五花肉、生抽、老抽、冰糖、姜、葱、八角、热水', steps: '五花肉切 3cm 方块，冷锅中火煸 8-10 分钟出油，倒掉多余油留一勺；转小火下糖姜葱八角炒 1 分钟；淋料酒生抽老抽，加约 600ml 热水没过肉；煮开撇沫，小火炖 50-60 分钟到筷子能插入；挑出香料，中火收汁 5-10 分钟', tip: '不必炒深糖色，老抽补色更稳；中途只能加热水' } },
+    { id: 'd32', cat: '拿手菜', emoji: '🥓', name: '回锅肉', desc: '肉要煸出灯盏窝', price: 30, tag: '', r: { t: 35, lv: '中等', ing: '五花肉、青蒜、豆瓣酱、豆豉、甜面酱、姜', steps: '五花肉整块冷水下锅加姜葱料酒煮 20 分钟，捞起放凉切薄片；少油下肉片中火煸到卷边出油；下豆瓣酱豆豉甜面酱炒出红油；下青蒜段大火炒 30 秒', tip: '煮到七分熟就够，煸出卷边才叫回锅' } },
+    { id: 'd33', cat: '拿手菜', emoji: '🍗', name: '黄焖鸡', desc: '汤要能拌两碗饭', price: 28, tag: '', r: { t: 40, lv: '中等', ing: '鸡腿、香菇、青椒、土豆、生抽、老抽、冰糖、姜', steps: '鸡腿剁块冷水焯水；少油炒糖色，下鸡块翻匀上色；加姜香菇土豆、生抽老抽和热水没过，小火焖 25 分钟；下青椒收汁 3 分钟', tip: '土豆后放，不然会烂成糊' } },
+    { id: 'd34', cat: '拿手菜', emoji: '🥔', name: '酸辣土豆丝', desc: '切得细才算过关', price: 14, tag: '', r: { t: 12, lv: '简单', ing: '土豆、干辣椒、花椒、醋、蒜、盐', steps: '土豆切细丝，清水冲两遍去淀粉，泡水 5 分钟；热油下花椒干辣椒蒜片爆香；大火下土豆丝快炒 2 分钟，沿锅边淋醋加盐，出锅', tip: '冲掉淀粉才脆，醋沿锅边淋才香' } },
+    { id: 'd35', cat: '拿手菜', emoji: '🥦', name: '干锅花菜', desc: '越嚼越香的那种', price: 20, tag: '', r: { t: 20, lv: '中等', ing: '有机花菜、五花肉、干辣椒、蒜、豆瓣酱', steps: '花菜掰小朵，干锅无油煸 3 分钟至边缘微焦盛出；煸五花肉片出油；下蒜末豆瓣酱炒香，倒回花菜大火翻 2 分钟', tip: '先干煸脱水，才不会有生味' } },
+    { id: 'd36', cat: '拿手菜', emoji: '🦆', name: '啤酒鸭', desc: '啤酒代水，香得很霸道', price: 38, tag: '', r: { t: 50, lv: '中等', ing: '鸭腿、啤酒、姜、干辣椒、八角、生抽、老抽', steps: '鸭块冷水焯水后擦干，中火煸出鸭油至微黄；下姜片八角干辣椒炒香；倒啤酒没过，加生抽老抽，小火焖 30 分钟；大火收汁', tip: '啤酒要一次倒够，中途加水就浑了' } },
+    { id: 'd37', cat: '拿手菜', emoji: '🥩', name: '蒜香排骨', desc: '蒜要多到夸张', price: 36, tag: '', r: { t: 40, lv: '中等', ing: '排骨、蒜、生抽、蚝油、糖、淀粉', steps: '排骨泡水 30 分钟去血水，擦干；蒜末生抽蚝油糖腌 2 小时；裹薄淀粉，油温六成热炸 5 分钟，复炸 1 分钟', tip: '腌够时间才进味，复炸才酥' } },
+    { id: 'd38', cat: '拿手菜', emoji: '🌶️', name: '水煮肉片', desc: '辣得刚好，下饭杀手', price: 32, tag: '微辣', r: { t: 30, lv: '中等', ing: '里脊、豆芽、豆瓣酱、干辣椒、花椒、蛋清、淀粉', steps: '里脊切薄片，用蛋清淀粉盐抓匀腌 15 分钟；豆芽焯水垫碗底；炒香豆瓣酱加水烧开，下肉片滑散 30 秒捞出；铺干辣椒花椒，泼热油', tip: '肉片下锅别搅，定型再推' } },
+    { id: 'd39', cat: '锅物', emoji: '🍲', name: '番茄牛腩锅', desc: '炖到筷子一戳就烂', price: 46, tag: '招牌', r: { t: 90, lv: '中等', ing: '牛腩、番茄、洋葱、姜、番茄膏、盐', steps: '牛腩切块冷水焯水冲净；番茄去皮切块，与洋葱一起炒出沙，加番茄膏炒匀；倒入牛腩和热水没过，小火炖 70 分钟；加盐调味，可下土豆再炖 15 分钟', tip: '番茄分两次放，一半炖化一半留块' } },
+    { id: 'd40', cat: '锅物', emoji: '🍄', name: '菌菇豆腐锅', desc: '清汤，喝两碗不腻', price: 26, tag: '', r: { t: 25, lv: '简单', ing: '香菇、蟹味菇、嫩豆腐、娃娃菜、姜、盐', steps: '菌菇洗净撕小，干锅煸 2 分钟出香；加姜片和水烧开，下娃娃菜煮 5 分钟；下豆腐小火煮 5 分钟，加盐和白胡椒', tip: '豆腐最后放，煮久了会老' } },
+    { id: 'd41', cat: '锅物', emoji: '🌭', name: '部队火锅', desc: '泡面最后下，那一口最香', price: 38, tag: '微辣', r: { t: 25, lv: '简单', ing: '午餐肉、香肠、年糕、辣白菜、方便面、芝士、辣酱', steps: '锅底铺辣白菜，摆上午餐肉香肠年糕；辣酱加生抽糖和水调开倒入；煮开转小火 8 分钟；最后下方便面煮 2 分钟，盖芝士片焖 30 秒', tip: '芝士要最后盖，早了会糊底' } },
+    { id: 'd42', cat: '锅物', emoji: '🫕', name: '一人食小火锅', desc: '谁想吃什么，自己涮', price: 28, tag: '', r: { t: 15, lv: '简单', ing: '锅底料、肥牛、蔬菜拼盘、丸子、粉丝', steps: '小锅加水或高汤，放一块锅底料煮开；先下耐煮的丸子粉丝；涮肉 10 秒即可，蔬菜最后下', tip: '肉别久煮，变色就捞' } },
+    { id: 'd43', cat: '锅物', emoji: '🐟', name: '酸菜鱼锅', desc: '酸辣够劲，汤能喝三碗', price: 48, tag: '隆重', r: { t: 40, lv: '中等', ing: '黑鱼片、酸菜、泡椒、蒜、姜、蛋清、淀粉', steps: '鱼片用盐蛋清淀粉抓匀腌 15 分钟；炒香酸菜泡椒姜蒜，加水煮开 10 分钟；下鱼骨煮 5 分钟，再下鱼片滑 40 秒；撒蒜末干辣椒泼热油', tip: '鱼片下锅别翻，推散就够' } },
+    { id: 'd44', cat: '锅物', emoji: '🥩', name: '番茄肥牛锅', desc: '酸甜开胃，配饭一绝', price: 42, tag: '', r: { t: 20, lv: '简单', ing: '肥牛卷、番茄、洋葱、金针菇、番茄膏', steps: '番茄切块炒出沙，加洋葱和番茄膏炒匀；加水煮开 5 分钟成汤底；下金针菇煮 3 分钟，最后涮肥牛 15 秒', tip: '肥牛最后涮，久煮就柴' } },
+    { id: 'd45', cat: '汤', emoji: '🍲', name: '番茄蛋花汤', desc: '蛋花要打成一朵云', price: 10, tag: '', r: { t: 10, lv: '简单', ing: '番茄、鸡蛋、葱花、盐、香油、淀粉', steps: '番茄切小块炒出汁，加水烧开煮 3 分钟；薄芡勾一下；蛋液从高处绕圈淋下，静置 5 秒再推散；加盐香油葱花', tip: '先勾薄芡，蛋花才会飘起来' } },
+    { id: 'd46', cat: '汤', emoji: '🌽', name: '玉米排骨汤', desc: '慢炖出来的耐心', price: 18, tag: '', r: { t: 70, lv: '简单', ing: '排骨、玉米、胡萝卜、姜、盐', steps: '排骨冷水焯水冲净；加姜片和足量水，小火炖 40 分钟；下玉米胡萝卜再炖 25 分钟；出锅前加盐', tip: '盐最后放，肉才不柴' } },
+    { id: 'd47', cat: '汤', emoji: '🥣', name: '紫菜蛋花汤', desc: '三分钟，救一顿饭', price: 8, tag: '', r: { t: 6, lv: '简单', ing: '紫菜、鸡蛋、虾皮、葱花、香油、盐', steps: '水开下紫菜虾皮煮 1 分钟；蛋液绕圈淋入，静置 5 秒推散；加盐香油葱花', tip: '紫菜别久煮，会发苦' } },
+    { id: 'd48', cat: '汤', emoji: '🍲', name: '冬瓜丸子汤', desc: '清清爽爽，夏天专属', price: 14, tag: '', r: { t: 25, lv: '简单', ing: '冬瓜、猪肉末、姜、淀粉、盐、白胡椒', steps: '肉末加姜末淀粉盐搅上劲，挤成丸子；水微开时下丸子，小火煮 8 分钟；下冬瓜片煮 6 分钟，加盐白胡椒', tip: '水别大滚下丸子，会散' } },
+    { id: 'd49', cat: '汤', emoji: '🍐', name: '银耳雪梨羹', desc: '甜汤，放凉了更好喝', price: 12, tag: '甜', r: { t: 60, lv: '简单', ing: '银耳、雪梨、冰糖、枸杞', steps: '银耳冷水泡 2 小时去黄根，撕小朵；加水小火炖 40 分钟到出胶；下雪梨块和冰糖再炖 15 分钟，撒枸杞', tip: '银耳撕得越小越容易出胶' } },
+    { id: 'd50', cat: '汤', emoji: '🍅', name: '罗宋汤', desc: '番茄和牛肉的耐心', price: 20, tag: '', r: { t: 50, lv: '中等', ing: '牛腩、番茄、土豆、胡萝卜、洋葱、卷心菜、番茄膏', steps: '牛腩切块焯水，加水炖 30 分钟；番茄洋葱炒出沙加番茄膏；倒入汤锅，加土豆胡萝卜炖 15 分钟；下卷心菜煮 5 分钟，加盐糖调味', tip: '番茄膏是灵魂，别省' } },
+    { id: 'd51', cat: '汤', emoji: '🍲', name: '海带排骨汤', desc: '清甜，喝完想睡觉', price: 18, tag: '', r: { t: 70, lv: '简单', ing: '排骨、海带结、姜、葱、盐', steps: '排骨冷水焯水；海带结泡洗 3 遍去咸；排骨加姜和水炖 40 分钟；下海带再炖 25 分钟，加盐', tip: '海带先泡去咸，汤才清' } },
+    { id: 'd52', cat: '主食', emoji: '🍚', name: '蛋炒饭', desc: '粒粒分明，锅气刚好', price: 12, tag: '', r: { t: 10, lv: '简单', ing: '隔夜饭、鸡蛋、葱花、盐、生抽', steps: '鸡蛋打散炒成蛋碎盛出；热锅下饭，用铲背压散炒到粒粒分明；倒回蛋碎，加盐生抽和葱花大火翻 30 秒', tip: '用隔夜冷饭，新饭一定粘' } },
+    { id: 'd53', cat: '主食', emoji: '🍜', name: '阳春面', desc: '简单的一碗，最像家', price: 10, tag: '', r: { t: 10, lv: '简单', ing: '细面、猪油、生抽、葱花、高汤或开水', steps: '碗里放猪油生抽和盐，冲入滚烫高汤化开；面煮 90 秒捞出放碗里；撒葱花，滴几滴香油', tip: '汤一定要滚烫，猪油才化得开' } },
+    { id: 'd54', cat: '主食', emoji: '🫓', name: '手抓饼', desc: '加蛋加肠，都可以商量', price: 8, tag: '', r: { t: 6, lv: '简单', ing: '冷冻手抓饼、鸡蛋、生菜、火腿、酱', steps: '冷冻饼皮直接下干锅，小火烙到鼓起分层；打个蛋在锅边，把饼盖上去粘住；翻面烙 1 分钟，刷酱夹生菜火腿', tip: '别解冻，解冻了就不起层' } },
+    { id: 'd55', cat: '主食', emoji: '🍜', name: '番茄鸡蛋面', desc: '汤要多，面要软一点', price: 14, tag: '', r: { t: 15, lv: '简单', ing: '面条、番茄、鸡蛋、葱花、盐', steps: '番茄炒出沙加水煮开；蛋液淋入煮成蛋花；另锅煮面 3 分钟捞进汤里；加盐葱花', tip: '面单独煮，汤才不浑' } },
+    { id: 'd56', cat: '主食', emoji: '🍜', name: '葱油拌面', desc: '葱要熬到微微发焦', price: 12, tag: '', r: { t: 20, lv: '中等', ing: '面条、小葱、生抽、老抽、糖、油', steps: '小葱切段，冷油小火熬 15 分钟到焦黄捞出；葱油里加生抽老抽糖煮开成酱汁；面煮熟捞出，淋两勺酱汁拌匀', tip: '葱必须冷油下锅，慢熬才香' } },
+    { id: 'd57', cat: '主食', emoji: '🍛', name: '咖喱鸡饭', desc: '咖喱放一夜更浓', price: 24, tag: '', r: { t: 35, lv: '简单', ing: '鸡腿肉、土豆、胡萝卜、洋葱、咖喱块、米饭', steps: '鸡腿切块煎到微黄；下洋葱土豆胡萝卜炒 2 分钟；加水没过煮 15 分钟；关小火放咖喱块搅化，再煮 5 分钟到浓稠', tip: '咖喱块要关火后放，不然容易糊底' } },
+    { id: 'd58', cat: '主食', emoji: '🥟', name: '一起包的水饺', desc: '包得丑也是心意', price: 20, tag: '招牌', r: { t: 45, lv: '中等', ing: '饺子皮、猪肉末、白菜、姜、葱、生抽、香油', steps: '白菜切碎加盐杀水挤干；肉末加姜葱生抽香油和白菜拌匀，顺一个方向搅上劲；包好后水开下锅，点三次凉水；浮起再煮 1 分钟捞出', tip: '肉馅顺一个方向搅，才抱团多汁' } },
+    { id: 'd59', cat: '主食', emoji: '🍚', name: '扬州炒饭', desc: '料要多，饭要干', price: 16, tag: '', r: { t: 15, lv: '中等', ing: '隔夜饭、虾仁、火腿丁、鸡蛋、青豆、葱花', steps: '虾仁焯水，鸡蛋炒散盛出；热锅下饭炒散，加火腿青豆；倒回虾仁鸡蛋，加盐和葱花大火翻匀', tip: '料先炒熟再拌饭，饭才不湿' } },
+    { id: 'd60', cat: '主食', emoji: '🍲', name: '西红柿疙瘩汤', desc: '一碗下去，胃就暖了', price: 12, tag: '', r: { t: 20, lv: '简单', ing: '面粉、番茄、鸡蛋、葱花、盐', steps: '面粉一点点加水搅成小疙瘩；番茄炒出沙加水烧开；下疙瘩边下边搅煮 5 分钟；淋蛋液，加盐葱花', tip: '水要一点一点加，疙瘩才小' } },
+    { id: 'd61', cat: '主食', emoji: '🥟', name: '韭菜盒子', desc: '底要脆，馅要香', price: 14, tag: '', r: { t: 30, lv: '中等', ing: '面粉、韭菜、鸡蛋、粉丝、虾皮、香油', steps: '烫面揉团醒 20 分钟；鸡蛋炒碎晾凉，与韭菜粉丝虾皮拌馅，最后加香油；包成半月形，小火两面各烙 4 分钟', tip: '韭菜最后拌，早拌会出水' } },
+    { id: 'd62', cat: '小吃', emoji: '🍟', name: '炸薯条', desc: '蘸番茄酱，抢着吃', price: 12, tag: '', r: { t: 20, lv: '简单', ing: '土豆、盐、油、番茄酱', steps: '土豆切条，冷水泡 10 分钟去淀粉，煮 3 分钟捞出晾干；冷冻 30 分钟；油温六成热炸 4 分钟，复炸 1 分钟', tip: '煮过再炸才外脆里糯' } },
+    { id: 'd63', cat: '小吃', emoji: '🌭', name: '烤肠', desc: '空气炸锅八分钟', price: 6, tag: '', r: { t: 9, lv: '简单', ing: '烤肠', steps: '表面划几刀；空气炸锅 180 度 8 分钟，中途翻面', tip: '划刀防爆，也更容易脆' } },
+    { id: 'd64', cat: '小吃', emoji: '🧀', name: '芝士年糕', desc: '拉丝长度=幸福程度', price: 16, tag: '', r: { t: 12, lv: '简单', ing: '年糕条、芝士、辣酱、糖、生抽', steps: '年糕煮 3 分钟捞出；辣酱糖生抽加两勺水煮开；下年糕翻匀收汁；铺芝士盖锅焖 40 秒', tip: '芝士最后放，焖到刚化就好' } },
+    { id: 'd65', cat: '小吃', emoji: '🍢', name: '关东煮', desc: '萝卜要煮到透明', price: 14, tag: '', r: { t: 40, lv: '简单', ing: '白萝卜、鱼丸、海带结、魔芋、关东煮汤料', steps: '萝卜切厚片，冷水下锅煮 20 分钟；加汤料和其余食材；小火煮 15 分钟，关火泡 20 分钟更入味', tip: '关火泡比一直煮更入味' } },
+    { id: 'd66', cat: '小吃', emoji: '🍗', name: '鸡米花', desc: '看剧必备，一盒不够', price: 15, tag: '', r: { t: 20, lv: '简单', ing: '鸡胸肉、淀粉、面包糠、鸡蛋、盐、黑胡椒', steps: '鸡胸切小块，用盐黑胡椒腌 15 分钟；依次裹淀粉、蛋液、面包糠；油温六成热炸 3 分钟', tip: '面包糠按压一下再炸，不容易掉' } },
+    { id: 'd67', cat: '小吃', emoji: '🍗', name: '炸鸡翅', desc: '外皮要脆到响', price: 18, tag: '', r: { t: 30, lv: '中等', ing: '鸡翅、面粉、淀粉、盐、黑胡椒、蒜粉', steps: '鸡翅划刀，用盐黑胡椒蒜粉腌 30 分钟；面粉淀粉 1:1 混合裹匀，静置 5 分钟；油温六成热炸 6 分钟，复炸 1 分钟', tip: '裹粉后静置返潮，炸完才不掉皮' } },
+    { id: 'd68', cat: '小吃', emoji: '🌶️', name: '韩式炒年糕', desc: '甜辣黏糊，越吃越上瘾', price: 18, tag: '微辣', r: { t: 15, lv: '简单', ing: '年糕条、鱼饼、洋葱、辣酱、糖、生抽', steps: '年糕煮 2 分钟捞出；洋葱鱼饼炒香；加辣酱糖生抽和半碗水煮开；下年糕中火煮到汤汁浓稠', tip: '汤汁收到能挂住年糕就停' } },
+    { id: 'd69', cat: '甜品', emoji: '🍮', name: '双皮奶', desc: '甜度刚好够抱抱', price: 12, tag: '甜', r: { t: 40, lv: '中等', ing: '全脂牛奶、蛋清、糖', steps: '牛奶煮到微沸倒入碗中，晾出奶皮；蛋清加糖打散，牛奶沿碗边倒回蛋清（留奶皮在碗里）；过筛倒回碗中，盖保鲜膜中火蒸 12 分钟', tip: '必须全脂奶，蒸的时候盖住防水汽' } },
+    { id: 'd70', cat: '甜品', emoji: '🍰', name: '提拉米苏', desc: '吃完一起犯困', price: 20, tag: '甜', r: { t: 30, lv: '中等', ing: '马斯卡彭、蛋黄、糖、淡奶油、咖啡液、手指饼干、可可粉', steps: '蛋黄加糖隔热水打到发白，拌入马斯卡彭；淡奶油打到六分发拌入；饼干蘸咖啡液铺一层，抹一层糊，重复两次；冷藏 4 小时，撒可可粉', tip: '饼干蘸一下就走，泡久了会烂' } },
+    { id: 'd71', cat: '甜品', emoji: '🍮', name: '焦糖布丁', desc: '敲碎焦糖那一下最爽', price: 14, tag: '甜', r: { t: 45, lv: '中等', ing: '鸡蛋、牛奶、糖、香草精', steps: '糖加水小火煮到琥珀色，倒进模具底部；鸡蛋牛奶糖搅匀过筛，倒进模具；水浴 150 度烤 35 分钟；冷藏后倒扣', tip: '水浴烤才嫩，别用大火' } },
+    { id: 'd72', cat: '甜品', emoji: '🍓', name: '草莓大福', desc: '一人一个，不许抢', price: 16, tag: '甜', r: { t: 30, lv: '中等', ing: '糯米粉、牛奶、糖、草莓、红豆沙', steps: '糯米粉牛奶糖拌匀，盖保鲜膜微波 2 分钟，取出搅拌再叮 1 分钟；放凉分成小团；草莓裹豆沙，用糯米皮包圆', tip: '手上沾熟粉再包，不然会黏' } },
+    { id: 'd73', cat: '甜品', emoji: '🍨', name: '冰淇淋球', desc: '两个球，两种口味', price: 10, tag: '甜', r: { t: 3, lv: '简单', ing: '冰淇淋、脆筒或碗、坚果碎', steps: '挖球前勺子用热水烫一下；每挖一个擦干净；撒坚果碎', tip: '勺子烫过再挖，球才圆' } },
+    { id: 'd74', cat: '甜品', emoji: '🥣', name: '芋圆西米露', desc: 'Q 弹，甜得刚好', price: 13, tag: '甜', r: { t: 35, lv: '中等', ing: '芋圆、西米、椰奶、糖', steps: '水开下西米煮 12 分钟焖 10 分钟到透明，过冷水；芋圆煮到浮起再煮 2 分钟；椰奶加糖加热，拌入西米和芋圆', tip: '西米要焖，只煮会有白心' } },
+    { id: 'd75', cat: '饮品', emoji: '🍋', name: '冰柠檬水', desc: '两片柠檬，一整天的太阳', price: 6, tag: '', r: { t: 5, lv: '简单', ing: '柠檬、冰块、蜂蜜、苏打水', steps: '柠檬切片去籽，轻压出汁；加蜂蜜和冰块；倒入冰苏打水，搅两下', tip: '籽要去掉，不然会苦' } },
+    { id: 'd76', cat: '饮品', emoji: '🍫', name: '热可可', desc: '捧着杯子说话的声音会变软', price: 9, tag: '', r: { t: 6, lv: '简单', ing: '可可粉、牛奶、糖、棉花糖', steps: '可可粉加糖用少量热水化开成糊；牛奶加热到微沸倒入搅匀；倒杯里放棉花糖', tip: '先用少量水化粉，才不起疙瘩' } },
+    { id: 'd77', cat: '饮品', emoji: '🫧', name: '爱心气泡水', desc: '特调：气泡 + 一点点心动', price: 13, tag: '特调', r: { t: 5, lv: '简单', ing: '气泡水、草莓糖浆、柠檬、薄荷、冰块', steps: '杯底倒 10ml 草莓糖浆；加满冰块；沿杯壁慢慢倒气泡水；放柠檬片和薄荷', tip: '慢倒才分层，好看又好吃' } },
+    { id: 'd78', cat: '饮品', emoji: '☕', name: '气泡美式', desc: '苦一点，清醒一点', price: 12, tag: '', r: { t: 4, lv: '简单', ing: '浓缩咖啡、气泡水、冰块、柠檬皮', steps: '杯中加冰，倒入气泡水七分满；缓慢倒入浓缩咖啡；挤一点柠檬皮油', tip: '咖啡最后倒，才有分层' } },
+    { id: 'd79', cat: '饮品', emoji: '🍑', name: '蜜桃乌龙', desc: '冰的，去糖，谢谢', price: 11, tag: '', r: { t: 6, lv: '简单', ing: '乌龙茶包、桃子、冰块、蜂蜜', steps: '茶包用 90 度水泡 4 分钟取出放凉；桃子切块轻压出汁；加冰和蜂蜜，倒茶摇匀', tip: '茶别泡太久，会涩' } },
+    { id: 'd80', cat: '饮品', emoji: '🥛', name: '热牛奶', desc: '睡前一杯，好好睡', price: 6, tag: '', r: { t: 4, lv: '简单', ing: '牛奶、蜂蜜', steps: '牛奶小火加热到边缘冒小泡，别煮沸；倒杯里加半勺蜂蜜', tip: '別煮开，会糊锅也破坏口感' } },
+    { id: 'd81', cat: '饮品', emoji: '🥭', name: '芒果冰沙', desc: '冰沙要能插住勺子', price: 14, tag: '', r: { t: 8, lv: '简单', ing: '芒果、冰块、牛奶、蜂蜜', steps: '芒果冷冻 2 小时切块；与冰块牛奶蜂蜜一起打 40 秒；倒杯，留几块芒果粒铺面', tip: '冰少打不动，冰多没味道，1:1 刚好' } },
+    { id: 'd82', cat: '饮品', emoji: '🍯', name: '柠檬蜂蜜茶', desc: '嗓子不舒服就喝这个', price: 9, tag: '', r: { t: 5, lv: '简单', ing: '柠檬、蜂蜜、温水', steps: '柠檬切片去籽放杯里；加两勺蜂蜜；倒 60 度温水搅匀', tip: '水太烫会破坏蜂蜜，温的就好' } },
+    { id: 'd83', cat: '夜宵', emoji: '🍜', name: '泡面加蛋', desc: '深夜的仪式感', price: 8, tag: '招牌', r: { t: 8, lv: '简单', ing: '方便面、鸡蛋、青菜、火腿', steps: '水开下面饼和调料煮 2 分钟；打入鸡蛋，别搅，盖盖焖 1 分钟；下青菜和火腿再煮 30 秒', tip: '蛋要整颗，焖出来才溏心' } },
+    { id: 'd84', cat: '夜宵', emoji: '🍢', name: '烧烤拼盘', desc: '一起撸串，风都变甜', price: 45, tag: '', r: { t: 30, lv: '中等', ing: '羊肉串、鸡翅、玉米、茄子、孜然、辣椒面、蒜蓉', steps: '烤盘刷油，食材摆好刷一层油；200 度烤 12 分钟；翻面撒孜然辣椒面，再烤 6 分钟；茄子提前蒸 8 分钟再烤', tip: '茄子先蒸后烤，才不夹生' } },
+    { id: 'd85', cat: '夜宵', emoji: '🦞', name: '小龙虾', desc: '剥得慢的人负责剥壳', price: 68, tag: '隆重', r: { t: 45, lv: '中等', ing: '小龙虾、蒜、干辣椒、啤酒、豆瓣酱、姜', steps: '小龙虾刷洗干净，去虾线剪头；热油爆香姜蒜辣椒豆瓣酱；下虾炒到变红，倒啤酒没过；煮 12 分钟收汁', tip: '一定要煮透，虾壳全红再煮 5 分钟' } },
+    { id: 'd86', cat: '夜宵', emoji: '🍝', name: '炒河粉', desc: '锅气足，配一杯冰的', price: 20, tag: '', r: { t: 12, lv: '中等', ing: '河粉、豆芽、鸡蛋、韭黄、生抽、老抽', steps: '河粉提前抖散；热锅热油炒蛋盛出；大火下河粉快速翻，加生抽老抽；下豆芽韭黄和蛋，翻 30 秒出锅', tip: '锅一定要够热，翻得慢会断' } },
+    { id: 'd87', cat: '夜宵', emoji: '🥟', name: '煎饺', desc: '底要脆，醋要够', price: 16, tag: '', r: { t: 15, lv: '简单', ing: '速冻饺子、油、面粉水、醋', steps: '平底锅少油摆饺子，中火煎 2 分钟；倒面粉水（1 勺面粉+半碗水）到饺子1/3高；盖盖焖 8 分钟，开盖收干', tip: '面粉水是冰花的关键，收干才脆' } },
+    { id: 'd88', cat: '夜宵', emoji: '🍗', name: '卤味拼盘', desc: '越啃越有话', price: 30, tag: '', r: { t: 60, lv: '中等', ing: '鸡爪、豆干、藕片、卤料包、生抽、冰糖', steps: '鸡爪焯水冲净；卤料包加水生抽冰糖煮开 10 分钟；下鸡爪煮 25 分钟，再下豆干藕片煮 15 分钟；关火泡 30 分钟', tip: '泡比煮更入味，隔夜最好吃' } },
+    { id: 'd89', cat: '夜宵', emoji: '🌶️', name: '麻辣烫', desc: '想吃什么自己挑', price: 26, tag: '微辣', r: { t: 25, lv: '简单', ing: '丸子、豆皮、宽粉、青菜、麻辣烫底料、芝麻酱', steps: '底料加水煮开；先下宽粉丸子煮 6 分钟；下豆皮青菜煮 3 分钟；盛出淋芝麻酱和蒜水', tip: '宽粉最后别煮烂，透明就捞' } },
+    { id: 'd90', cat: '前菜', emoji: '🥩', name: '干拌毛肚', desc: '脆得响，辣得刚好', price: 32, tag: '招牌', r: { t: 45, lv: '中等', ing: '牛肚、干辣椒面、花椒面、芹菜、小米辣、香菜、白糖、盐', steps: '牛肚洗净冷水下锅，加姜葱料酒煮 40 分钟到筷子能插入；捞出放凉切条；干辣椒面花椒面加糖盐和一勺蒜水调成干拌料；下芹菜段香菜小米辣，与毛肚拌匀', tip: '牛肚要煮到软而不烂，拌之前一定放凉' } },
+    { id: 'd91', cat: '拿手菜', emoji: '🌶️', name: '辣子鸡', desc: '辣椒里找鸡，才叫香', price: 38, tag: '招牌', r: { t: 60, lv: '中等', ing: '鸡腿、葱、姜、干辣椒、淀粉、蚝油、酱油、料酒、白芝麻', steps: '鸡腿拆肉切小块，加葱姜片蚝油酱油盐胡椒粉腌 20 分钟；拌两勺淀粉上浆；六成油温下锅低温炸熟捞出，升高油温复炸到外壳发脆；另起锅留底油小火煸香葱姜，下干辣椒段炒出辣味；倒回鸡块翻匀，出锅前撒白芝麻', tip: '低温炸熟、高温复炸，才外脆里嫩；辣椒一变色就下鸡块，别炒糊' } },
+    { id: 'd92', cat: '拿手菜', emoji: '🥓', name: '家常盐煎肉', desc: '不焯水，直接干煸', price: 30, tag: '', r: { t: 25, lv: '简单', ing: '二刀肉、蒜苗、青椒、郫县豆瓣酱、豆豉、姜片', steps: '二刀肉切薄片，冷锅小火直接煸到出油、边缘卷起；下姜片豆瓣酱豆豉炒出红油；下青椒炒断生；下蒜苗段大火翻 30 秒出锅', tip: '肉不焯水才香；豆瓣酱本身很咸，别再放盐' } },
+    { id: 'd93', cat: '拿手菜', emoji: '🍜', name: '蚂蚁上树', desc: '肉末爬满粉丝', price: 22, tag: '', r: { t: 20, lv: '简单', ing: '粉丝、肉末、郫县豆瓣酱、姜蒜、青红椒、酱油、蚝油、葱花', steps: '粉丝提前泡软剪成段；肉末加酱油腌 10 分钟再拍一点淀粉；热油爆香姜蒜下肉末炒散炒香；下一小勺豆瓣酱，加一小碗水烧开，放酱油蚝油；下粉丝和辣椒圈焖到汁收干，撒葱花', tip: '粉丝泡软就行别泡烂；酱料有盐，全程不用另加盐' } },
+    { id: 'd94', cat: '锅物', emoji: '🐟', name: '水煮鱼片', desc: '嫩得筷子都不太敢夹', price: 48, tag: '招牌', r: { t: 35, lv: '中等', ing: '黑鱼片、郫县豆瓣酱、干辣椒段、花椒、八角、香叶、蛋清、淀粉', steps: '鱼片用盐蛋清淀粉抓匀腌 15 分钟；炒香豆瓣酱和香料，加水烧开 5 分钟；先下鱼骨煮 5 分钟，再下鱼片滑 40 秒连汤倒进大碗；铺干辣椒段花椒，泼一勺滚油', tip: '鱼片下锅别搅，用推的；泼油要滚烫才出香' } },
+    { id: 'd95', cat: '拿手菜', emoji: '🥩', name: '水煮牛肉', desc: '牛肉要逆纹切', price: 36, tag: '微辣', r: { t: 35, lv: '中等', ing: '牛里脊、菠菜、蒜、干辣椒、辣椒粉、花椒、淀粉、豆瓣酱', steps: '牛肉逆纹切薄片，加盐生抽淀粉和一点水抓匀腌 15 分钟；菠菜焯水垫碗底；炒香豆瓣酱加水烧开，下牛肉片滑散 30 秒；连汤倒碗，铺蒜末辣椒粉干辣椒，泼热油', tip: '腌肉时分次打点水进去，煮出来才嫩' } },
+    { id: 'd96', cat: '拿手菜', emoji: '🦆', name: '子姜鸭', desc: '姜比肉还抢手', price: 42, tag: '', r: { t: 60, lv: '中等', ing: '鸭腿、子姜、青红椒、郫县豆瓣酱、泡椒、泡姜、啤酒', steps: '鸭块冷水焯水后擦干，中火煸出鸭油到微黄；下泡姜泡椒和豆瓣酱炒香；倒啤酒没过鸭块，小火焖 30 分钟；下子姜片和青红椒再焖 8 分钟，开盖收汁', tip: '子姜后放，煮久了就没那股辛香' } },
+    { id: 'd97', cat: '锅物', emoji: '🥩', name: '酸汤肥牛', desc: '酸得开胃，汤能泡饭', price: 42, tag: '', r: { t: 20, lv: '简单', ing: '肥牛卷、金针菇、番茄、二荆条、小米辣、泡椒、黄灯笼辣椒酱、白醋', steps: '金针菇焯水垫在碗底；炒香姜蒜和番茄，加黄灯笼辣椒酱炒匀，加水煮开 5 分钟；加白醋和盐调酸；下肥牛涮 15 秒连汤倒入碗；撒二荆条小米辣，泼热油', tip: '白醋最后调，久煮酸味会跑' } },
+    { id: 'd98', cat: '小吃', emoji: '🍢', name: '钵钵鸡', desc: '泡着吃的冷串串', price: 26, tag: '', r: { t: 25, lv: '简单', ing: '鸡肉、藕片、豆皮、鹌鹑蛋、竹签、钵钵鸡调料、高汤、白芝麻', steps: '各种食材分别焯熟，过冷水晾凉，串成签；钵钵鸡调料用高汤（或凉开水）化开；把串泡进去 20 分钟以上；撒白芝麻和葱花', tip: '泡的时间越久越入味；冰镇一下更好吃' } },
+    { id: 'd99', cat: '主食', emoji: '🍜', name: '担担面', desc: '一碗面，拌出半条街的香', price: 24, tag: '招牌', r: { t: 25, lv: '中等', ing: '面条、猪肉末、芽菜、花生碎、熟芝麻、辣椒油、生抽、醋、糖、花椒油', steps: '肉末下锅炒干水汽，加芽菜炒香成臊子盛出；碗底放辣椒油生抽醋糖花椒油和一点芝麻酱；面煮熟捞进碗里；铺上臊子、花生碎、芝麻和葱花拌匀', tip: '先拌碗底再放面，味道才匀；面别煮太软' } },
+    { id: 'd100', cat: '小吃', emoji: '🌶️', name: '酸辣粉', desc: '酸辣够劲，汤都要喝完', price: 20, tag: '微辣', r: { t: 25, lv: '简单', ing: '红薯粉条、花生米、榨菜、香菜、蒜水、辣椒油、香醋、生抽', steps: '红薯粉温水泡 30 分钟；碗里调蒜水香醋辣椒油生抽和盐；水开下粉煮 3 分钟捞进碗，冲两勺热汤；撒花生碎、榨菜末和香菜', tip: '粉别煮久，透明就捞；醋分两次放，一半煮一半拌' } },
+    { id: 'd101', cat: '前菜', emoji: '🪷', name: '凉拌藕片', desc: '藕断丝连，像我们', price: 12, tag: '', r: { t: 15, lv: '简单', ing: '莲藕、小米辣、蒜、香醋、生抽、白糖、香油', steps: '藕去皮切薄片，水开下锅焯 1 分钟，捞出立刻过冰水更脆；蒜切末和小米辣圈放碗里，加香醋生抽白糖调匀；藕片沥干倒入料汁，拌 30 秒让每片都挂色；淋香油装盘，冷藏 5 分钟口感最好', tip: '藕片过冰水才脆，别用铁锅焯' } },
+    { id: 'd102', cat: '前菜', emoji: '🫘', name: '凉拌豆皮', desc: '卷着辣，也卷着甜', price: 10, tag: '', r: { t: 12, lv: '简单', ing: '豆皮、黄瓜、蒜、小米辣、生抽、香醋、香油', steps: '豆皮切丝，水开焯 40 秒后立刻过凉水沥干；黄瓜切丝垫在盘底；蒜末加小米辣生抽香醋香油调成汁；淋在豆皮上拌匀，冷藏 5 分钟更入味', tip: '焯完一定要过凉水，豆皮才不粘不坨' } },
+    { id: 'd103', cat: '前菜', emoji: '🥢', name: '凉拌腐竹', desc: '慢慢泡，慢慢喜欢你', price: 12, tag: '', r: { t: 25, lv: '简单', ing: '腐竹、木耳、黄瓜、蒜、生抽、香醋、辣椒油', steps: '腐竹冷水泡 3 小时到完全变软，中途换两次水；水开下腐竹焯 1 分钟，木耳焯 2 分钟，一起过冷水；黄瓜拍碎垫底，腐竹切段铺上；蒜末加生抽香醋辣椒油调汁淋上，拌 20 秒', tip: '腐竹只能冷水泡，热水泡会外烂内硬' } },
+    { id: 'd104', cat: '前菜', emoji: '🥩', name: '五香酱牛肉', desc: '卤透一片，喂你一口', price: 38, tag: '招牌', r: { t: 90, lv: '进阶', ing: '牛腱子、八角、桂皮、香叶、生抽、老抽、冰糖、姜', steps: '牛腱子冷水泡 2 小时去血水，中途换三次水；冷水下锅焯 5 分钟撇净浮沫，捞出冲凉；加香料和生抽老抽冰糖姜，倒开水没过，小火卤 70 分钟到筷子能扎透；关火连汤泡 2 小时，取出放凉再切薄片', tip: '放凉再切才不散，泡汤过夜更入味' } },
+    { id: 'd105', cat: '前菜', emoji: '🐔', name: '泡椒凤爪', desc: '啃着啃着就笑', price: 18, tag: '微辣', r: { t: 60, lv: '简单', ing: '鸡爪、泡椒、小米辣、姜、白醋、料酒、盐', steps: '鸡爪剪去指甲，冷水下锅加姜和料酒，水开煮 8 分钟；捞出立刻过冰水，泡 10 分钟让皮收紧；泡椒连汁倒进保鲜盒，加白醋盐和小米辣，放入鸡爪；冷藏 6 小时以上，隔夜更入味', tip: '煮 8 分钟就够，久了皮会烂不弹' } },
+    { id: 'd106', cat: '前菜', emoji: '🥕', name: '凉拌三丝', desc: '三样丝，一样的心', price: 10, tag: '', r: { t: 12, lv: '简单', ing: '土豆、胡萝卜、青椒、蒜、香醋、生抽、香油', steps: '三样都切细丝，土豆丝冲两遍水去淀粉；水开下锅焯 45 秒，捞出过冰水沥干；蒜末加香醋生抽香油调汁；淋上拌匀，静置 5 分钟入味', tip: '焯水别超过 1 分钟，丝才脆不软' } },
+    { id: 'd107', cat: '前菜', emoji: '🍆', name: '蒜泥茄子', desc: '软软糯糯像你', price: 12, tag: '', r: { t: 20, lv: '简单', ing: '长茄子、蒜、生抽、香醋、香油、小米辣、葱花', steps: '茄子整条上锅，水开后大火蒸 12 分钟到筷子能轻松插入；取出晾 5 分钟，撕成长条挤掉多余水分；蒜捣成泥，加生抽香醋香油和小米辣调匀；浇在茄条上撒葱花，拌开就吃', tip: '蒸完挤掉水再拌，不然会出一盘汤' } },
+    { id: 'd108', cat: '前菜', emoji: '🥬', name: '麻酱菠菜', desc: '绿油油的一片心意', price: 10, tag: '', r: { t: 12, lv: '简单', ing: '菠菜、芝麻酱、蒜、生抽、香醋、白芝麻', steps: '水开加几滴油，菠菜下锅焯 40 秒，捞出过冰水；挤干水分切段，团成小把摆盘；芝麻酱用温水一点点澥开，加生抽香醋和蒜末；淋在菠菜上撒白芝麻', tip: '麻酱要一点点加水澥，一次倒多会结块' } },
+    { id: 'd109', cat: '早餐', emoji: '🎃', name: '小米南瓜粥', desc: '熬得稠一点，暖到心里', price: 10, tag: '甜', r: { t: 35, lv: '简单', ing: '小米、南瓜、大米、枸杞', steps: '小米和大米淘洗后泡 10 分钟，南瓜去皮切小块；一起下锅中火煮开，转小火熬 25 分钟，其间每 5 分钟搅一次防糊底；米粒开花汤变稠时放枸杞，再煮 3 分钟关火', tip: '水一次加够，中途添水会澥' } },
+    { id: 'd110', cat: '早餐', emoji: '🥟', name: '小馄饨', desc: '一碗热的，等你起床', price: 14, tag: '', r: { t: 25, lv: '中等', ing: '馄饨皮、猪肉末、姜、葱、紫菜、虾皮、生抽、香油', steps: '肉末加姜末和生抽，顺一个方向搅到发黏上劲；取皮放少许馅，对折捏紧口，别包太满；水开下锅用勺背轻推防粘，浮起后点一次凉水；再次沸腾时放紫菜和虾皮，煮 1 分钟盛出淋香油', tip: '馅只放一点，皮薄容易破' } },
+    { id: 'd111', cat: '早餐', emoji: '🥣', name: '咸豆腐脑', desc: '咸口的，才像小时候', price: 12, tag: '', r: { t: 20, lv: '中等', ing: '内酯豆腐、木耳、黄花菜、鸡蛋、生抽、淀粉、香菜', steps: '内酯豆腐整块蒸 5 分钟，取出用勺片成薄片放碗里；木耳和黄花菜泡发切碎，下锅炒香后加水煮开 3 分钟；淋生抽调味，用水淀粉勾薄芡到能挂勺；蛋液绕圈淋入，静置 5 秒再推散，浇在豆腐上撒香菜', tip: '芡要薄，浇头才挂得住豆腐' } },
+    { id: 'd112', cat: '早餐', emoji: '🥚', name: '鸡蛋羹', desc: '滑得像布丁，一勺到底', price: 8, tag: '', r: { t: 15, lv: '简单', ing: '鸡蛋、温水、盐、生抽、香油、葱花', steps: '鸡蛋加盐打散，按 1 比 1.5 兑温水搅匀；过筛两遍去掉泡沫，倒进碗里盖一层保鲜膜；水开后中小火蒸 10 分钟，关火焖 2 分钟；表面凝固不晃且勺子插入不塌就是熟了，淋生抽香油撒葱花', tip: '水温和火候都对，蒸出来才没蜂窝' } },
+    { id: 'd113', cat: '早餐', emoji: '🍙', name: '粢饭团', desc: '捏紧一点，别散在路上', price: 12, tag: '招牌', r: { t: 30, lv: '中等', ing: '糯米、大米、油条、肉松、咸菜、黑芝麻', steps: '糯米和大米按 2 比 1 混匀，泡 2 小时后上锅蒸 25 分钟；蒸到米粒透亮有黏性，趁热拌一点盐；竹帘铺保鲜膜，把饭压成薄片，中间放油条和肉松，再撒一把咸菜；卷起捏紧成条，表面滚一层黑芝麻', tip: '趁热捏，凉了米就散了' } },
+    { id: 'd114', cat: '早餐', emoji: '🧁', name: '红枣发糕', desc: '发起来的时候最可爱', price: 10, tag: '甜', r: { t: 90, lv: '中等', ing: '面粉、红枣、酵母、红糖、温水', steps: '酵母用温水化开，加红糖和面粉搅成稠糊；盖上湿布在温暖处发到两倍大，表面起小泡约 60 分钟；倒入铺好油纸的模具，摆上去核红枣；水开后大火蒸 25 分钟，关火焖 5 分钟再开盖，筷子插入不带湿面就是熟', tip: '关火焖 5 分钟再开盖，糕面才不塌' } },
+    { id: 'd115', cat: '早餐', emoji: '🥔', name: '萝卜丝饼', desc: '两面金黄，翻面要快', price: 9, tag: '', r: { t: 20, lv: '简单', ing: '白萝卜、面粉、鸡蛋、虾皮、葱花、盐', steps: '白萝卜擦细丝，加盐腌 10 分钟挤干水；打入鸡蛋拌上面粉和虾皮，调到能挂住丝的稠度；平底锅中小火多放一点油，舀一勺摊成圆饼；两面各煎 3 分钟，边缘变硬并且颜色金黄就出锅', tip: '萝卜丝一定挤干水，不然煎不成形' } },
+    { id: 'd116', cat: '早餐', emoji: '🥯', name: '红糖馒头', desc: '掰开一半，甜在中间', price: 8, tag: '甜', r: { t: 105, lv: '进阶', ing: '面粉、红糖、酵母、温水、牛奶', steps: '红糖用温水化开，放凉到不烫手再加酵母静置 5 分钟；分次倒入面粉和牛奶，揉到面团光滑不粘手约 10 分钟；盖布发到两倍大，手指戳洞不回缩；排气后搓条切段，二次醒发 15 分钟；水开上锅大火蒸 15 分钟，关火焖 3 分钟再开盖', tip: '二次醒发别省，馒头才松软不硬' } },
+    { id: 'd117', cat: '拿手菜', emoji: '🥩', name: '小炒黄牛肉', desc: '辣得刚好，配饭一绝', price: 42, tag: '微辣', r: { t: 15, lv: '中等', ing: '牛里脊、小米辣、螺丝椒、蒜、姜、生抽、淀粉', steps: '牛里脊逆纹切薄片，加生抽淀粉和一勺水抓到发黏腌 10 分钟；热锅冷油下牛肉大火滑 40 秒变色立刻盛出；锅留底油爆香蒜姜和小米辣，下螺丝椒中火炒 2 分钟到虎皮微皱；倒回牛肉大火翻 20 秒，淋半勺生抽出锅', tip: '牛肉下锅别久炒，变色就盛出才嫩' } },
+    { id: 'd118', cat: '拿手菜', emoji: '🥓', name: '农家小炒肉', desc: '辣椒比肉还下饭', price: 32, tag: '微辣', r: { t: 18, lv: '中等', ing: '五花肉、青尖椒、蒜、豆豉、生抽、蚝油', steps: '五花肉切薄片，冷锅小火干煸 6 分钟到出油卷边；下蒜片和豆豉炒香 30 秒；下青尖椒段中火炒 3 分钟到表皮起泡；淋生抽蚝油大火翻匀 20 秒出锅', tip: '肉要先煸出油，青椒后放才脆' } },
+    { id: 'd119', cat: '拿手菜', emoji: '🌰', name: '板栗烧鸡', desc: '秋天的味道，你也有', price: 38, tag: '招牌', r: { t: 50, lv: '中等', ing: '鸡腿、板栗、姜、葱、生抽、老抽、冰糖', steps: '鸡块冷水焯 3 分钟捞出擦干；少油下冰糖小火炒到枣红，倒鸡块翻匀上色；加姜葱生抽老抽和热水没过，小火焖 25 分钟；下板栗再焖 15 分钟，大火收汁到挂勺', tip: '板栗后放，煮太久会散成泥' } },
+    { id: 'd120', cat: '拿手菜', emoji: '🥔', name: '土豆炖牛肉', desc: '炖到软烂，像拥抱', price: 48, tag: '', r: { t: 70, lv: '中等', ing: '牛腩、土豆、胡萝卜、洋葱、姜、八角、生抽', steps: '牛腩切块冷水焯水冲净；下姜片八角炒香，加生抽和热水没过，小火炖 40 分钟；下土豆胡萝卜再炖 20 分钟到筷子能穿透；下洋葱大火收汁 5 分钟', tip: '土豆后放，早放会炖成糊' } },
+    { id: 'd121', cat: '拿手菜', emoji: '🍄', name: '香菇滑鸡', desc: '滑得像你说晚安', price: 26, tag: '', r: { t: 35, lv: '简单', ing: '鸡腿肉、干香菇、姜、蚝油、生抽、淀粉', steps: '干香菇温水泡 30 分钟，泡菇水留着；鸡腿肉切块，加蚝油生抽淀粉抓匀腌 15 分钟；热油下姜片和香菇中火炒 2 分钟出香；倒鸡肉和泡菇水，小火焖 12 分钟到汁浓', tip: '泡菇水别倒，那是这道菜的味' } },
+    { id: 'd122', cat: '拿手菜', emoji: '🥢', name: '京酱肉丝', desc: '卷起来，喂你一口', price: 28, tag: '招牌', r: { t: 20, lv: '中等', ing: '里脊、甜面酱、葱白、豆腐皮、蛋清、淀粉、糖', steps: '里脊切细丝，加蛋清淀粉抓匀腌 10 分钟；热锅温油下肉丝滑散 40 秒盛出；小火炒甜面酱加糖和两勺水熬到冒泡；倒回肉丝翻匀裹酱，配葱白丝和豆腐皮卷着吃', tip: '甜面酱要小火炒透，不然有生酱味' } },
+    { id: 'd123', cat: '拿手菜', emoji: '🍶', name: '三杯鸡', desc: '一杯敬你，一杯敬我', price: 36, tag: '特调', r: { t: 40, lv: '中等', ing: '鸡腿、九层塔、姜、蒜、米酒、酱油、麻油', steps: '鸡腿剁块擦干，麻油小火煸姜片 3 分钟到卷边；下蒜和鸡块中火煎 5 分钟到表面金黄；倒米酒酱油各一杯，小火焖 20 分钟收汁；关火前撒九层塔盖盖焖 30 秒', tip: '全程不加水，靠米酒和酱油焖熟' } },
+    { id: 'd124', cat: '拿手菜', emoji: '🦐', name: '油焖大虾', desc: '剥好了，都在你碗里', price: 52, tag: '隆重', r: { t: 20, lv: '中等', ing: '大虾、姜、葱、番茄酱、糖、料酒、生抽', steps: '大虾剪须开背去虾线，擦干；热油下虾中火煎 2 分钟两面变红盛出；下姜葱爆香，加番茄酱糖料酒生抽和半碗水烧开；倒回大虾小火焖 5 分钟收汁到亮', tip: '虾要煎出虾油，汁才红亮' } },
+    { id: 'd125', cat: '拿手菜', emoji: '🥩', name: '黑椒牛柳', desc: '黑胡椒多一点，像我', price: 46, tag: '', r: { t: 20, lv: '中等', ing: '牛里脊、洋葱、彩椒、黑胡椒碎、蚝油、生抽、淀粉', steps: '牛里脊切条，加生抽淀粉和一勺水抓匀腌 15 分钟；大火热锅下牛柳快炒 40 秒盛出；下洋葱彩椒大火炒 1 分钟断生；倒回牛柳加黑胡椒碎蚝油翻 20 秒', tip: '牛柳全程大火快炒，久炒就老' } },
+    { id: 'd126', cat: '拿手菜', emoji: '🍖', name: '豉汁蒸排骨', desc: '蒸出来的温柔', price: 34, tag: '', r: { t: 40, lv: '中等', ing: '排骨、豆豉、蒜、姜、生抽、蚝油、淀粉', steps: '排骨泡水 20 分钟去血水，擦干；蒜末豆豉剁碎，加生抽蚝油和淀粉拌成酱；排骨抓匀腌 30 分钟；水开后大火蒸 18 分钟，筷子能戳透即熟', tip: '排骨一定擦干再腌，蒸出来才不水' } },
+    { id: 'd127', cat: '拿手菜', emoji: '🐟', name: '剁椒鱼头', desc: '红红火火，像我们的日子', price: 56, tag: '隆重', r: { t: 25, lv: '中等', ing: '胖头鱼头、剁椒、蒜、姜、葱、蒸鱼豉油、料酒', steps: '鱼头对半劈开洗净，抹料酒和盐腌 10 分钟；盘底垫姜片葱段，鱼头摊开；铺满剁椒和蒜末，淋一勺蒸鱼豉油；水开大火蒸 12 分钟，倒掉腥水泼热油', tip: '蒸够 12 分钟就关火，肉才嫩不柴' } },
+    { id: 'd128', cat: '拿手菜', emoji: '🐟', name: '香煎带鱼', desc: '外焦里嫩，慢慢吃', price: 30, tag: '', r: { t: 25, lv: '简单', ing: '带鱼、姜、面粉、盐、料酒、白胡椒', steps: '带鱼切段，用盐料酒白胡椒和姜丝腌 20 分钟；擦干后裹一薄层面粉；中小火下锅煎 4 分钟不动，定型再翻面煎 3 分钟到两面金黄', tip: '带鱼擦干再裹粉，下锅别急着翻' } },
+    { id: 'd129', cat: '拿手菜', emoji: '🍤', name: '虾仁滑蛋', desc: '嫩得像刚睡醒', price: 32, tag: '', r: { t: 10, lv: '简单', ing: '虾仁、鸡蛋、葱花、盐、料酒、淀粉', steps: '虾仁加盐料酒淀粉抓匀腌 5 分钟；鸡蛋打散加一点盐和两勺水；热锅温油下虾仁炒 40 秒变色盛出；倒蛋液小火推炒 40 秒，半凝固时拌入虾仁撒葱花', tip: '蛋液半凝固就关火，余温会继续熟' } },
+    { id: 'd130', cat: '拿手菜', emoji: '🥚', name: '肉末蒸蛋', desc: '挖一勺，喂你', price: 18, tag: '', r: { t: 15, lv: '简单', ing: '鸡蛋、猪肉末、葱花、生抽、盐、香油', steps: '鸡蛋打散加 1.5 倍温水和盐搅匀，过筛去泡；盖保鲜膜中火蒸 8 分钟；肉末加生抽小火炒 2 分钟出香；铺在蛋羹上淋香油撒葱花', tip: '蛋液过筛并盖膜，表面才没有蜂窝' } },
+    { id: 'd131', cat: '拿手菜', emoji: '🍆', name: '酱爆茄子', desc: '吸饱了酱，也吸饱了喜欢', price: 20, tag: '', r: { t: 18, lv: '简单', ing: '长茄子、肉末、甜面酱、蒜、生抽、糖', steps: '茄子切滚刀块，撒盐腌 10 分钟挤掉水；中火多油煎 4 分钟到表面微焦盛出；炒香肉末和蒜末，下甜面酱糖炒 30 秒；倒回茄子翻 1 分钟裹匀', tip: '茄子先腌出水，煎的时候才不吃油' } },
+    { id: 'd132', cat: '拿手菜', emoji: '🥬', name: '蚝油生菜', desc: '三十秒就好，别走开', price: 12, tag: '', r: { t: 6, lv: '简单', ing: '生菜、蒜、蚝油、生抽、淀粉、糖', steps: '生菜掰开洗净沥干；水开加几滴油，下生菜烫 20 秒立刻捞出摆盘；蒜末小火炒香，加蚝油生抽糖和半碗水煮开；薄芡勾浓，淋在生菜上', tip: '生菜只烫 20 秒，久了就发黄发软' } },
+    { id: 'd133', cat: '拿手菜', emoji: '🥬', name: '手撕包菜', desc: '撕得越丑越好吃', price: 14, tag: '', r: { t: 10, lv: '简单', ing: '包菜、干辣椒、蒜、醋、生抽、盐', steps: '包菜手撕成片，洗净甩干水；热锅下油爆香蒜片和干辣椒 20 秒；大火下包菜炒 2 分钟到边缘透明；沿锅边淋醋加盐生抽翻 15 秒出锅', tip: '包菜一定甩干水，带水下锅会出汤' } },
+    { id: 'd134', cat: '拿手菜', emoji: '🍲', name: '家常豆腐', desc: '两面金黄，日子也金黄', price: 20, tag: '', r: { t: 20, lv: '中等', ing: '老豆腐、青椒、木耳、蒜、生抽、蚝油、淀粉', steps: '老豆腐切三角厚片，用厨房纸吸干水；中火少油煎 3 分钟一面到金黄，翻面再煎 3 分钟；炒香蒜片和木耳青椒；倒生抽蚝油和水淀粉，下豆腐小火煨 2 分钟', tip: '豆腐吸干水再煎，才不粘锅不溅油' } },
+    { id: 'd135', cat: '拿手菜', emoji: '🥬', name: '醋溜白菜', desc: '酸得开胃，脆得响', price: 12, tag: '', r: { t: 12, lv: '简单', ing: '白菜帮、干辣椒、蒜、香醋、生抽、糖、淀粉', steps: '白菜帮斜刀片成薄片，菜叶另放；热油爆香蒜和干辣椒 20 秒；大火下菜帮炒 90 秒到边缘透明；下菜叶，倒醋糖生抽和薄芡翻 30 秒', tip: '菜帮菜叶分开下，一起炒会一软一硬' } },
+    { id: 'd136', cat: '拿手菜', emoji: '🌶️', name: '虎皮青椒', desc: '起皮那刻最香', price: 14, tag: '微辣', r: { t: 15, lv: '简单', ing: '青椒、蒜、生抽、醋、糖、盐', steps: '青椒去蒂去籽，用手按扁；干锅不放油，中火压着煎 4 分钟到表皮起白泡发皱；推到一边，下油蒜末炒香；加生抽醋糖和盐翻 1 分钟', tip: '先干锅煎出虎皮，再放油才不炸' } },
+    { id: 'd137', cat: '锅物', emoji: '🍲', name: '三鲜砂锅', desc: '热乎一锅，先暖你的手', price: 36, tag: '招牌', r: { t: 45, lv: '简单', ing: '白菜、豆腐、虾仁、鹌鹑蛋、粉丝、高汤', steps: '白菜垫底铺上豆腐和鹌鹑蛋，倒入高汤大火烧开；转小火炖 12 分钟，让白菜出甜味；下虾仁和粉丝再煮 3 分钟，虾仁卷红即可；加盐调味撒葱花', tip: '高汤一次加够，中途加水会冲淡鲜味' } },
+    { id: 'd138', cat: '锅物', emoji: '🥥', name: '椰子鸡锅', desc: '清甜得像你说话的语气', price: 58, tag: '', r: { t: 40, lv: '简单', ing: '文昌鸡、椰子水、椰肉、沙姜、小米辣、青柠', steps: '椰子水加等量清水烧开，下椰肉条煮 5 分钟出香；鸡块斩小件下锅，中小火浸煮 12 分钟；关火焖 5 分钟，鸡肉刚断生最嫩；沙姜末加小米辣和青柠汁调蘸碟', tip: '鸡别久煮，断生后靠焖才嫩' } },
+    { id: 'd139', cat: '锅物', emoji: '🍲', name: '寿喜锅', desc: '甜咸刚好，像我们', price: 48, tag: '甜', r: { t: 30, lv: '中等', ing: '肥牛卷、大葱、白菜、魔芋丝、豆腐、生鸡蛋', steps: '锅底抹一层牛油，大葱段煎到微焦出香；白菜豆腐魔芋丝码进锅，倒寿喜汁到半满，中火煮 8 分钟；肥牛一片片涮 10 秒，变色立刻夹出；蘸打散的生鸡蛋液吃', tip: '寿喜汁偏甜，先倒一半不够再补' } },
+    { id: 'd140', cat: '锅物', emoji: '🦀', name: '香辣蟹锅', desc: '辣到冒汗也想再吃一只', price: 68, tag: '微辣', r: { t: 40, lv: '进阶', ing: '梭子蟹、土豆、藕片、干辣椒、花椒、豆瓣酱、姜蒜、年糕', steps: '蟹块切口拍淀粉，六成油温炸 1 分钟定型捞出；土豆和藕片炸到边缘金黄；底油小火炒豆瓣酱和干辣椒花椒出红油；倒回蟹块和配菜大火翻 2 分钟，加半碗水焖 3 分钟后收汁', tip: '蟹切口拍粉再炸，蟹黄才不会流失' } },
+    { id: 'd141', cat: '锅物', emoji: '🍖', name: '羊蝎子锅', desc: '炖到脱骨，慢慢等你', price: 56, tag: '', r: { t: 110, lv: '进阶', ing: '羊蝎子、白萝卜、玉米、姜、花椒、干辣椒、香菜', steps: '羊蝎子冷水泡 1 小时去血水，冷水下锅焯 5 分钟撇沫；热锅下姜片花椒干辣椒炒香，倒入羊蝎子翻炒 2 分钟；加开水没过，大火烧开转小火炖 60 分钟到肉能啃下；下白萝卜和玉米再炖 20 分钟，撒香菜', tip: '续汤必须用开水，冷水会让肉发柴' } },
+    { id: 'd142', cat: '锅物', emoji: '🍗', name: '芋儿鸡锅', desc: '一口软糯，一口你', price: 42, tag: '微辣', r: { t: 55, lv: '中等', ing: '鸡腿、小芋头、豆瓣酱、泡椒、姜、青蒜', steps: '鸡腿剁块冷水焯 3 分钟捞出擦干；热油炒香豆瓣酱和泡椒出红油；下鸡块大火翻炒上色，加热水没过小火焖 20 分钟；下芋头块再焖 15 分钟到筷子能穿透，撒青蒜段', tip: '芋头后放，煮久了会化在汤里' } },
+    { id: 'd143', cat: '汤', emoji: '🐟', name: '鲫鱼豆腐汤', desc: '奶白的汤，像我想你的颜色', price: 26, tag: '招牌', r: { t: 40, lv: '中等', ing: '鲫鱼、北豆腐、姜片、小葱、料酒、盐', steps: '鲫鱼擦干水分，热锅冷油中小火两面各煎 3 分钟至表皮金黄；冲入滚开水，加姜片和料酒，大火滚 10 分钟至汤色发白；下豆腐块转小火炖 15 分钟，加盐调味，撒葱花出锅', tip: '一定用滚开水冲，汤才奶白' } },
+    { id: 'd144', cat: '汤', emoji: '🌶️', name: '酸辣汤', desc: '酸辣一碗，暖到指尖', price: 16, tag: '微辣', r: { t: 25, lv: '中等', ing: '豆腐丝、木耳丝、鸡蛋、金针菇、香醋、白胡椒、淀粉', steps: '木耳丝和金针菇下开水煮 3 分钟，再下豆腐丝煮 2 分钟；转小火淋水淀粉，边淋边搅至汤汁微稠能挂勺；蛋液绕圈淋入，静置 5 秒再轻推散开；关火后加香醋和白胡椒，尝一口酸辣够劲再出锅', tip: '醋一定关火后放，早放就没有酸香' } },
+    { id: 'd145', cat: '汤', emoji: '🍗', name: '山药炖鸡汤', desc: '炖两小时，等你回家', price: 30, tag: '', r: { t: 90, lv: '中等', ing: '土鸡、铁棍山药、姜片、红枣、枸杞、盐', steps: '鸡块冷水下锅焯 3 分钟撇净血沫，捞出用温水冲净；加姜片和足量清水，大火烧开转小火炖 50 分钟；下山药段和红枣再炖 25 分钟至山药一戳就透；关火前 5 分钟放枸杞，加盐调味', tip: '山药要后放，炖久了会化在汤里' } },
+    { id: 'd146', cat: '汤', emoji: '🥜', name: '花生猪蹄汤', desc: '炖到黏嘴，才叫用心', price: 36, tag: '', r: { t: 120, lv: '进阶', ing: '猪蹄、花生米、姜片、料酒、白胡椒、盐', steps: '猪蹄剁块冷水下锅焯 5 分钟，撇净浮沫后捞出冲净；花生米提前用冷水泡 1 小时；全部材料加没过两指的清水，大火烧开转最小火炖 90 分钟至筷子能轻松插透；加盐和白胡椒，再滚 3 分钟出锅', tip: '全程保持最小火，汤才清亮不浑' } },
+    { id: 'd147', cat: '汤', emoji: '🥣', name: '西湖牛肉羹', desc: '滑得像你靠过来的肩', price: 22, tag: '招牌', r: { t: 25, lv: '中等', ing: '牛里脊、嫩豆腐、鸡蛋清、香菜、淀粉、白胡椒、盐', steps: '牛肉逆纹剁成细末，用少许盐和淀粉抓匀腌 10 分钟；水开下牛肉末快速划散煮 1 分钟，撇净浮沫；下豆腐丁小火煮 3 分钟，淋水淀粉搅至浓稠挂勺；关火淋蛋清搅出细丝，撒白胡椒和香菜', tip: '蛋清要关火后淋，才不会起蛋块' } },
+    { id: 'd148', cat: '汤', emoji: '🦆', name: '酸萝卜老鸭汤', desc: '酸香一整屋，等你说好吃', price: 42, tag: '隆重', r: { t: 110, lv: '进阶', ing: '老鸭、酸萝卜、泡姜、花椒、料酒、白胡椒', steps: '鸭块冷水下锅加料酒焯 5 分钟，撇沫后捞出冲净；干锅小火把鸭块煸 5 分钟逼出鸭油，倒掉多余的油；加泡姜花椒和足量开水，小火炖 60 分钟；下酸萝卜块再炖 30 分钟，尝汤加白胡椒即可', tip: '酸萝卜后放，炖久了酸味会发闷' } },
+    { id: 'd149', cat: '汤', emoji: '🐚', name: '丝瓜蛤蜊汤', desc: '清鲜一口，夏天就该这样', price: 18, tag: '', r: { t: 15, lv: '简单', ing: '丝瓜、蛤蜊、姜丝、小葱、盐、白胡椒', steps: '蛤蜊用淡盐水泡 30 分钟吐沙，再冲洗两遍；水开下姜丝和蛤蜊，中火煮 2 分钟至全部开口；下丝瓜块煮 3 分钟至断生变软；加盐和白胡椒，撒葱花立刻关火', tip: '蛤蜊一开口就关火，煮久肉会缩' } },
+    { id: 'd150', cat: '汤', emoji: '🎃', name: '南瓜浓汤', desc: '甜得刚好，像你笑的时候', price: 14, tag: '甜', r: { t: 25, lv: '简单', ing: '贝贝南瓜、洋葱、黄油、牛奶、淡奶油、盐', steps: '南瓜去皮切块，上锅大火蒸 15 分钟至一压就烂；黄油小火化开，下洋葱碎炒 3 分钟至透明发甜；南瓜和洋葱加牛奶用料理机打成细糊；倒回锅中小火加热 5 分钟，边搅边煮防糊底，加盐和淡奶油调匀', tip: '倒回锅加热要一直搅动，很容易糊底' } },
+    { id: 'd151', cat: '主食', emoji: '🍚', name: '腊味煲仔饭', desc: '锅巴留给你吃', price: 38, tag: '招牌', r: { t: 45, lv: '中等', ing: '丝苗米、腊肠、腊肉、青菜、鸡蛋、生抽、蚝油', steps: '米淘净泡 30 分钟，加水到米面一指节；砂锅刷油下米，大火煮开转小火焖 8 分钟；铺腊肠腊肉片，沿锅边淋一圈油，小火再焖 10 分钟；关火焖 5 分钟，听到滋滋声说明锅巴成了；青菜焯 30 秒摆上，淋生抽蚝油汁', tip: '沿锅边淋油才有脆锅巴' } },
+    { id: 'd152', cat: '主食', emoji: '🍛', name: '台式卤肉饭', desc: '卤汁要多浇一勺', price: 26, tag: '', r: { t: 45, lv: '中等', ing: '五花肉、红葱酥、香菇、鸡蛋、生抽、老抽、冰糖、米饭', steps: '五花肉切小条，干锅小火煸 8 分钟出油；下红葱酥和香菇丁炒香，加生抽老抽冰糖；倒热水没过肉，小火卤 30 分钟到汤汁能挂勺；鸡蛋另锅煮 8 分钟剥壳，放进卤汁泡 10 分钟；连汁浇在热饭上', tip: '红葱酥是灵魂，收汁前再补一把' } },
+    { id: 'd153', cat: '主食', emoji: '🍚', name: '猪油拌饭', desc: '一勺猪油一勺你', price: 10, tag: '', r: { t: 8, lv: '简单', ing: '热米饭、猪油、生抽、葱花、白芝麻', steps: '米饭要刚出锅的，盛进碗里压实；趁热挖一勺猪油埋在饭中间，等 20 秒化开；淋一圈生抽撒葱花芝麻，拌到每粒米都发亮', tip: '饭必须烫，猪油才化得匀' } },
+    { id: 'd154', cat: '主食', emoji: '🍜', name: '河南烩面', desc: '汤浓面宽，管饱管暖', price: 22, tag: '', r: { t: 40, lv: '中等', ing: '烩面坯、羊肉、海带丝、豆腐皮、香菜、羊骨汤、盐', steps: '羊骨汤大火烧开转小火吊 30 分钟，撇净浮沫；面坯抹油醒 20 分钟，双手抻成两指宽的长条；汤滚下海带丝豆腐皮煮 3 分钟；下烩面煮 2 分钟到浮起，加盐撒香菜', tip: '面坯抹油醒透才抻得开不断' } },
+    { id: 'd155', cat: '主食', emoji: '🍜', name: '打卤面', desc: '卤子稠一点才挂面', price: 18, tag: '', r: { t: 30, lv: '中等', ing: '手擀面、木耳、黄花菜、鸡蛋、五花肉、淀粉、生抽', steps: '木耳黄花菜温水泡 20 分钟，五花肉切薄片；少油煸肉片到微黄，加生抽和泡菌水烧开；下木耳黄花菜小火煮 8 分钟；分两次淋水淀粉勾到能挂勺，关火淋蛋液推成蛋花；浇在煮 90 秒的手擀面上', tip: '卤要稠到能挂住面条，稀了就成汤面' } },
+    { id: 'd156', cat: '主食', emoji: '🍜', name: '兰州牛肉面', desc: '一碗面一勺辣子', price: 24, tag: '微辣', r: { t: 50, lv: '进阶', ing: '拉面、牛腱、白萝卜、香菜、蒜苗、辣椒油、牛骨汤', steps: '牛腱冷水下锅焯 5 分钟，换清水加香料小火炖 45 分钟；白萝卜切片放进汤里煮 6 分钟到透明；面条下滚水煮 2 分钟，捞起过一下热汤装碗；浇滚汤铺牛肉萝卜，加辣子撒蒜苗香菜', tip: '汤要滚着浇，面才不坨' } },
+    { id: 'd157', cat: '主食', emoji: '🍲', name: '云南过桥米线', desc: '汤面一层油，烫熟一颗心', price: 28, tag: '', r: { t: 35, lv: '中等', ing: '米线、鸡胸肉、猪里脊、鹌鹑蛋、豆芽、韭菜、鸡汤', steps: '老母鸡汤炖 30 分钟，盛进烫过的砂锅，表面浮一层鸡油保住温度；肉切薄片铺盘，鹌鹑蛋磕进小碟；先下生肉片在汤里烫 30 秒到变色；再下米线豆芽韭菜焖 1 分钟，汤面不冒气也要够烫', tip: '砂锅要烫过，油层封住温度' } },
+    { id: 'd158', cat: '主食', emoji: '🥟', name: '鲜肉馄饨', desc: '皮薄到能看见馅', price: 16, tag: '', r: { t: 25, lv: '中等', ing: '馄饨皮、猪肉末、虾仁、葱姜水、紫菜、虾皮、香油', steps: '肉末加盐顺一个方向搅，分三次打葱姜水到上劲；加虾仁碎和香油拌匀，包成小元宝捏紧口；水开下锅，浮起后点一次凉水再煮 1 分钟；碗底放紫菜虾皮香油，冲两勺滚汤', tip: '葱姜水少量多次打，馅才嫩不散' } },
+    { id: 'd159', cat: '主食', emoji: '🥟', name: '糯米烧麦', desc: '一口一个，留最后一个给你', price: 18, tag: '', r: { t: 50, lv: '中等', ing: '糯米、饺子皮、香菇、腊肠、生抽、老抽、猪油', steps: '糯米泡 2 小时，上锅蒸 25 分钟到粒粒透亮；猪油炒香香菇丁腊肠丁，倒糯米加生抽老抽拌匀成馅；饺子皮擀薄边缘，包馅收口捏成花边；水开后大火蒸 8 分钟', tip: '皮边擀薄再捏，蒸完才不硬' } },
+    { id: 'd160', cat: '主食', emoji: '🍥', name: '椒盐花卷', desc: '一层一层撕着吃', price: 8, tag: '', r: { t: 90, lv: '中等', ing: '面粉、酵母、温水、椒盐、葱花、食用油', steps: '面粉加酵母温水和成团，盖布发到两倍大；擀成大片刷油撒椒盐葱花，卷起切段两个叠一起拧成花；冷水上锅醒 15 分钟，大火蒸 15 分钟；关火焖 3 分钟再开盖', tip: '关火焖三分钟，花卷才不会回缩' } },
+    { id: 'd161', cat: '主食', emoji: '🎃', name: '南瓜小米粥', desc: '甜是南瓜给的', price: 9, tag: '甜', r: { t: 40, lv: '简单', ing: '小米、南瓜、大米、冰糖', steps: '小米大米淘一遍，冷水泡 15 分钟；南瓜去皮切小块，和小米一起下冷水锅；大火煮开转小火熬 25 分钟，中途搅两下防粘底；南瓜化开粥变稠就关火，加冰糖搅化', tip: '小米别搓洗，冲一遍就够' } },
+    { id: 'd162', cat: '主食', emoji: '🥞', name: '西葫芦鸡蛋饼', desc: '糊塌子要摊得薄', price: 12, tag: '', r: { t: 15, lv: '简单', ing: '西葫芦、鸡蛋、面粉、盐、葱花、食用油', steps: '西葫芦擦丝加盐腌 10 分钟，挤掉水分；加鸡蛋面粉葱花拌成能流动的稠糊；平底锅刷薄油小火，倒一勺摊平，底面定型就翻面；两面各煎 2 分钟到金黄', tip: '糊别太稠，能摊开才薄' } },
+    { id: 'd163', cat: '小吃', emoji: '🍥', name: '炸藕盒', desc: '咬开一口，汤汁像心事', price: 14, tag: '招牌', r: { t: 30, lv: '中等', ing: '莲藕、猪肉末、面粉、淀粉、鸡蛋、生抽、葱花', steps: '莲藕去皮切薄片，两片夹一勺肉馅按紧；面粉淀粉加鸡蛋和水调成能挂住勺背的糊；油温六成热下锅，中小火炸 4 分钟到浅黄捞出；升高油温复炸 40 秒，外壳一敲就响即可', tip: '藕片切薄才夹得住，糊要稠一些' } },
+    { id: 'd164', cat: '小吃', emoji: '🥠', name: '炸春卷', desc: '脆得掉渣，也掉进心里', price: 12, tag: '', r: { t: 25, lv: '中等', ing: '春卷皮、猪肉末、白菜、胡萝卜、淀粉、盐', steps: '白菜切丝加盐杀水 10 分钟挤干；肉末小火炒散，下白菜胡萝卜丝炒到没有水汽盛出晾凉；取皮放馅卷紧，两头折进用面糊封口；五成油温中小火炸 3 分钟到皮金黄发硬就捞', tip: '馅晾凉再包，热馅一定破皮' } },
+    { id: 'd165', cat: '小吃', emoji: '🍳', name: '烤冷面', desc: '加两个蛋，我们分着吃', price: 10, tag: '', r: { t: 12, lv: '简单', ing: '冷面片、鸡蛋、洋葱、香菜、烤冷面酱、白芝麻', steps: '平底锅刷薄油，冷面片中火煎 1 分钟到边缘起泡；打一个蛋摊平在面上，凝固后翻面；刷酱撒洋葱香菜，中火再煎 20 秒后卷起切段', tip: '面片变软就翻，煎久了发硬' } },
+    { id: 'd166', cat: '小吃', emoji: '🐙', name: '章鱼小丸子', desc: '圆滚滚的，像你生气时', price: 18, tag: '', r: { t: 25, lv: '中等', ing: '章鱼、低筋面粉、鸡蛋、卷心菜、柴鱼片、沙拉酱、照烧汁', steps: '章鱼切小丁，沸水焯 30 秒捞出；面粉加蛋和水调成能流动的稀糊；丸子锅刷油烧热，倒糊七分满撒章鱼丁和卷心菜；小火煎 2 分钟，边缘凝固后用竹签翻成球再煎 4 分钟到外壳微硬', tip: '糊要稀一点，翻的时候才不散' } },
+    { id: 'd167', cat: '小吃', emoji: '🥛', name: '炸鲜奶', desc: '外脆里嫩，甜到发懵', price: 14, tag: '甜', r: { t: 40, lv: '进阶', ing: '牛奶、玉米淀粉、糖、鸡蛋、面包糠、面粉', steps: '牛奶加淀粉和糖搅匀，小火边煮边搅到变稠挂勺；倒进方盒抹平，冷藏 2 小时到完全定形；切条依次裹上面粉再蘸蛋液再滚面包糠；五成油温炸 60 秒，外壳金黄立刻捞出', tip: '奶糊要熬到很稠，不然切条就塌' } },
+    { id: 'd168', cat: '小吃', emoji: '🥗', name: '凉皮', desc: '酸辣一拌，夏天就来了', price: 12, tag: '微辣', r: { t: 20, lv: '简单', ing: '凉皮、黄瓜、豆芽、蒜水、辣椒油、香醋、芝麻酱', steps: '现成凉皮切 1 厘米宽条抖散；豆芽沸水焯 1 分钟捞出过冷水；蒜水加香醋生抽辣椒油和芝麻酱搅匀，调到能挂住凉皮的状态；凉皮铺黄瓜丝和豆芽，淋汁拌匀静置 3 分钟更入味', tip: '凉皮别过热水，一烫就断' } },
+    { id: 'd169', cat: '小吃', emoji: '🍢', name: '炸臭豆腐', desc: '闻着坏，吃着香，像我们', price: 10, tag: '微辣', r: { t: 20, lv: '中等', ing: '臭豆腐、蒜末、辣椒酱、香菜、生抽、糖、淀粉', steps: '臭豆腐吸干表面水，两面划浅浅的十字；五成油温下锅小火炸 4 分钟到外壳起泡浮起；升高油温复炸 30 秒捞出控油；蒜末加辣椒酱生抽糖和两勺水小火煮开勾薄芡淋上撒香菜', tip: '必须炸透，外脆内软才不噎' } },
+    { id: 'd170', cat: '小吃', emoji: '🍖', name: '炸酥肉', desc: '刚出锅最香，先给你一块', price: 22, tag: '', r: { t: 30, lv: '中等', ing: '五花肉、红薯淀粉、鸡蛋、花椒粉、盐、料酒、姜', steps: '五花肉切条，加盐料酒姜末花椒粉腌 20 分钟；红薯淀粉加蛋调成能挂住筷子的厚糊；六成油温逐条下锅炸 3 分钟到定型捞出；油温升到八成复炸 40 秒到外壳发脆', tip: '用红薯淀粉才酥，复炸别超过一分钟' } },
+    { id: 'd171', cat: '小吃', emoji: '🧈', name: '铁板豆腐', desc: '滋滋响的时候，刚好想你', price: 12, tag: '微辣', r: { t: 15, lv: '简单', ing: '老豆腐、辣椒面、孜然粉、蒜末、葱花、生抽、油', steps: '老豆腐切厚片，用厨房纸吸干表面水；平底锅放油烧热，豆腐中火煎 4 分钟到一面金黄；翻面再煎 3 分钟到两面都结硬壳；撒辣椒面孜然粉蒜末淋生抽，出锅前撒葱花', tip: '豆腐先吸干水，才煎得脆不溅油' } },
+    { id: 'd172', cat: '小吃', emoji: '🧇', name: '鸡蛋仔', desc: '一格一格，都是你的', price: 15, tag: '甜', r: { t: 20, lv: '中等', ing: '低筋面粉、鸡蛋、牛奶、糖、泡打粉、黄油', steps: '鸡蛋加糖打散，倒牛奶和融化的黄油搅匀；筛入面粉和泡打粉拌到没有干粉就停；模具刷油烧热，倒糊八分满，中小火每面烤 3 分钟；边缘变脆能整片取出即可', tip: '面糊别过度搅拌，起筋就不蓬松' } },
+    { id: 'd173', cat: '甜品', emoji: '🍡', name: '红糖糍粑', desc: '外脆内糯，甜得像你', price: 16, tag: '甜', r: { t: 25, lv: '中等', ing: '糯米粉、温水、红糖、熟黄豆粉、食用油', steps: '糯米粉分次加温水揉成不粘手的面团，静置 10 分钟；分成小剂子搓圆后压成 1 厘米厚的饼；平底锅少油小火煎 3 分钟到两面金黄鼓起；红糖加两勺水小火熬到冒大泡变稠，淋在糍粑上再撒黄豆粉', tip: '面团偏软才糯，煎时全程小火' } },
+    { id: 'd174', cat: '甜品', emoji: '🥭', name: '杨枝甘露', desc: '一碗热带的风，喂你', price: 22, tag: '甜', r: { t: 30, lv: '简单', ing: '芒果、西柚、西米、椰奶、淡奶油、白糖', steps: '水开下西米煮 12 分钟关火焖 10 分钟到全透明，过冷水沥干；芒果一半打成果泥一半切小丁；椰奶加糖小火加热到微沸放凉，拌入果泥；碗里放西米和芒果丁，淋椰奶糊撒西柚粒，冷藏 20 分钟', tip: '西柚粒最后撒，苦味才不串' } },
+    { id: 'd175', cat: '甜品', emoji: '🍶', name: '桂花酒酿圆子', desc: '甜甜的，像你说话', price: 12, tag: '甜', r: { t: 15, lv: '简单', ing: '小圆子、酒酿、干桂花、冰糖、鸡蛋、枸杞', steps: '水开下小圆子，中火煮到全部浮起再煮 1 分钟；加冰糖和酒酿，小火煮 2 分钟别大滚；蛋液绕圈淋入，静置 5 秒再轻推成蛋花；关火撒干桂花和枸杞', tip: '酒酿别久煮，香气会跑光' } },
+    { id: 'd176', cat: '甜品', emoji: '🍠', name: '拔丝地瓜', desc: '拉得越长，越分不开', price: 18, tag: '招牌', r: { t: 30, lv: '进阶', ing: '红薯、白糖、食用油、清水、熟白芝麻', steps: '红薯去皮切滚刀块，清水冲一遍擦干；油温五成热下锅炸 5 分钟到筷子能扎透，捞出升高油温复炸 30 秒；锅留底油下白糖和等量清水，小火熬到浅琥珀色能拉出细丝；倒入红薯快速翻匀撒芝麻，装盘配一碗凉水蘸着吃', tip: '糖色一变色就下红薯，晚了发苦' } },
+    { id: 'd177', cat: '甜品', emoji: '🍚', name: '芒果糯米饭', desc: '糯糯的，想黏着你', price: 26, tag: '甜', r: { t: 45, lv: '中等', ing: '糯米、芒果、椰浆、白糖、盐、熟白芝麻', steps: '糯米提前泡 4 小时，沥干铺在纱布上大火蒸 25 分钟到米粒透明；椰浆加糖和一小撮盐小火加热到糖化，别煮沸；趁热把三分之二椰浆拌进糯米，盖住焖 15 分钟吸饱；芒果切片摆盘，淋剩下的椰浆撒芝麻', tip: '椰浆里那撮盐是灵魂，别省' } },
+    { id: 'd178', cat: '甜品', emoji: '🫘', name: '驴打滚', desc: '滚一身黄豆面，甜得踏实', price: 14, tag: '甜', r: { t: 40, lv: '中等', ing: '糯米粉、温水、红豆沙、熟黄豆粉、白糖', steps: '糯米粉加温水调成能流动的稀糊，倒进抹了油的盘里；水开后大火蒸 20 分钟，中途取出搅一次；晾到不烫手，案板撒黄豆粉，把糯米团擀成 1 厘米厚的长片；抹一层豆沙卷紧，切段再滚一遍黄豆粉', tip: '趁温热时卷才不裂，凉了就硬' } },
+    { id: 'd179', cat: '甜品', emoji: '🥥', name: '椰奶小方', desc: '冰冰凉凉，像你的手心', price: 15, tag: '甜', r: { t: 120, lv: '中等', ing: '椰浆、牛奶、玉米淀粉、白糖、椰蓉', steps: '椰浆牛奶白糖和淀粉倒进不粘锅，先搅匀再开小火；全程小火不停搅，3 到 5 分钟变浓稠冒泡就关火；倒进铺了椰蓉的方盒抹平表面，冷藏 2 小时到完全凝固；倒扣脱模切小方块，四面滚上椰蓉', tip: '必须边加热边搅，糊底就废了' } },
+    { id: 'd180', cat: '甜品', emoji: '🍬', name: '糖不甩', desc: '黏黏的，甩都甩不掉', price: 12, tag: '甜', r: { t: 25, lv: '简单', ing: '糯米粉、温水、红糖、熟花生碎、熟白芝麻、姜片', steps: '糯米粉加温水揉成团，再搓成小丸子；水开下锅煮到浮起再煮 2 分钟，捞出过冷水；红糖加半碗水和姜片小火熬 5 分钟到能挂勺；丸子倒进糖浆里滚匀，撒花生碎和白芝麻', tip: '糖浆熬到挂勺，丸子才不寡淡' } },
+    { id: 'd181', cat: '饮品', emoji: '🧋', name: '珍珠奶茶', desc: '吸管一插就笑了', price: 15, tag: '招牌', r: { t: 30, lv: '中等', ing: '红茶包、牛奶、木薯粉圆、红糖、淡奶油', steps: '水开下粉圆大火煮 15 分钟，关火焖 10 分钟到全透明；捞出过冷水，拌红糖腌 5 分钟；红茶包用 95 度水泡 5 分钟，加牛奶和淡奶油按 1 比 1 调匀；杯中先放粉圆，倒入奶茶加冰', tip: '粉圆煮完过冷水才弹，别用热水冲' } },
+    { id: 'd182', cat: '饮品', emoji: '🍒', name: '酸梅汤', desc: '冰镇的，喝一口就活过来', price: 8, tag: '', r: { t: 40, lv: '简单', ing: '乌梅、山楂干、陈皮、甘草、冰糖、桂花', steps: '乌梅山楂陈皮甘草冲洗后用清水泡 30 分钟；连水倒进锅里大火烧开，转小火煮 25 分钟；加冰糖再煮 5 分钟，关火撒桂花；放凉后冷藏 2 小时再喝', tip: '桂花要关火后放，跟着煮会发苦' } },
+    { id: 'd183', cat: '饮品', emoji: '🍈', name: '冬瓜茶', desc: '甜得很老实', price: 7, tag: '', r: { t: 60, lv: '简单', ing: '冬瓜、黑糖、冰糖、柠檬、水', steps: '冬瓜带皮切小块，加黑糖拌匀腌 30 分钟出汁；连汁倒进锅里小火煮 40 分钟到冬瓜透明；滤出汁液加冰糖煮化，挤几滴柠檬汁；冷藏后按 1 比 3 兑冰水喝', tip: '冬瓜皮别削，香气和胶质都在皮里' } },
+    { id: 'd184', cat: '饮品', emoji: '🫘', name: '绿豆沙牛乳', desc: '沙沙的，凉到心里', price: 12, tag: '', r: { t: 45, lv: '简单', ing: '绿豆、牛奶、冰糖、炼乳、冰块', steps: '绿豆洗净冷冻 2 小时，水开后下锅煮 20 分钟到开花；加冰糖煮化，取一半绿豆打成沙再倒回锅；放凉后加牛奶和炼乳搅匀；杯里加冰块倒满', tip: '绿豆先冻再煮，二十分钟就开花' } },
+    { id: 'd185', cat: '饮品', emoji: '🫚', name: '姜枣茶', desc: '冷天捧着，暖到手指', price: 8, tag: '', r: { t: 25, lv: '简单', ing: '生姜、红枣、红糖、枸杞、桂圆', steps: '生姜带皮切薄片，红枣去核撕开；加 600ml 水大火烧开，转小火煮 15 分钟；下红糖和桂圆再煮 5 分钟，关火撒枸杞', tip: '姜带皮煮不上火，红枣去核才不燥' } },
+    { id: 'd186', cat: '饮品', emoji: '🍵', name: '百香果绿茶', desc: '酸得眯眼，还要再喝', price: 10, tag: '', r: { t: 10, lv: '简单', ing: '百香果、绿茶包、蜂蜜、冰块、薄荷', steps: '绿茶包用 85 度水泡 4 分钟，取出茶包放凉；百香果对半切开，挖果肉进杯；加蜂蜜搅匀，倒茶加冰，最后放薄荷', tip: '茶温降到 60 度以下再加蜂蜜' } },
+    { id: 'd187', cat: '饮品', emoji: '🌺', name: '洛神花茶', desc: '红得像你说喜欢时', price: 9, tag: '甜', r: { t: 20, lv: '简单', ing: '洛神花、冰糖、陈皮、柠檬、水', steps: '洛神花冲洗一遍，和陈皮一起用温水泡 5 分钟；加 500ml 水烧开，转小火煮 10 分钟；加冰糖煮化，关火放凉；加柠檬片冷藏 1 小时', tip: '洛神花别用铁锅煮，颜色会发黑' } },
+    { id: 'd188', cat: '饮品', emoji: '☕', name: '燕麦拿铁', desc: '燕麦香，配你的早安', price: 18, tag: '特调', r: { t: 8, lv: '中等', ing: '浓缩咖啡、燕麦奶、冰块、糖浆、肉桂粉', steps: '燕麦奶加热到 60 度，打出细密奶泡；杯中加冰和 10ml 糖浆；倒燕麦奶七分满，再缓慢淋入浓缩咖啡；表面撒少许肉桂粉', tip: '燕麦奶别煮沸，60 度最好打发' } },
+    { id: 'd189', cat: '夜宵', emoji: '🦑', name: '铁板鱿鱼', desc: '铁板一响就想起你', price: 32, tag: '微辣', r: { t: 20, lv: '中等', ing: '鱿鱼须、洋葱、青椒、孜然粉、辣椒面、蒜蓉辣酱', steps: '鱿鱼须洗净沥干，用厨房纸把表面水分吸干；铁板或厚底锅烧到微微冒烟，刷一层油下鱿鱼中大火煎 3 分钟到边缘卷起；下洋葱丝和青椒块翻炒 1 分钟，加蒜蓉辣酱翻匀；撒孜然粉和辣椒面，最后大火 20 秒逼香', tip: '鱿鱼一定擦干，带水下锅只会煮熟不香' } },
+    { id: 'd190', cat: '夜宵', emoji: '🌶️', name: '麻辣香锅', desc: '辣到想抢你的冰可乐', price: 38, tag: '招牌', r: { t: 35, lv: '中等', ing: '藕片、土豆片、金针菇、午餐肉、虾、香锅底料、干辣椒', steps: '藕片和土豆片切薄，水开焯 2 分钟捞出沥干；虾和午餐肉分别煎到两面变色盛出；锅留底油小火炒香底料和干辣椒，出红油后倒入全部食材；中火翻炒 3 分钟到每样都裹上酱，关火', tip: '食材先焯先煎，最后合炒才不出水' } },
+    { id: 'd191', cat: '夜宵', emoji: '🍜', name: '螺蛳粉', desc: '臭得刚好，爱得刚好', price: 18, tag: '', r: { t: 15, lv: '简单', ing: '螺蛳粉料包、干米粉、酸笋、腐竹、花生、青菜、木耳', steps: '干米粉冷水泡 30 分钟，水开下锅煮 8 分钟到能用指甲掐断；另起锅加水放汤料包和酸笋煮开 3 分钟；米粉捞进汤锅再煮 2 分钟，青菜烫 30 秒；关火放腐竹花生和辣油，拌匀再吃', tip: '米粉先泡再煮，汤才不会发糊' } },
+    { id: 'd192', cat: '夜宵', emoji: '🐚', name: '花甲粉', desc: '汤鲜得像偷了海的味道', price: 22, tag: '', r: { t: 20, lv: '简单', ing: '花甲、粉丝、金针菇、蒜末、小米辣、生抽、香菜', steps: '花甲放淡盐水里吐沙 1 小时，搓洗两遍；粉丝温水泡 15 分钟剪短；锅底铺金针菇和粉丝，花甲码上面，倒生抽蒜末小米辣和半碗水；盖盖中火煮 6 分钟到全部开口，撒香菜', tip: '开口就关火，再煮肉就缩成一点' } },
+    { id: 'd193', cat: '夜宵', emoji: '🐌', name: '炒田螺', desc: '吸一口，你就笑', price: 26, tag: '微辣', r: { t: 25, lv: '中等', ing: '田螺、紫苏、干辣椒、蒜、姜、豆瓣酱、啤酒', steps: '田螺剪掉尾尖，加盐和香油泡 2 小时吐沙；冷水下锅焯 3 分钟捞出冲净；热油炒香姜蒜干辣椒和豆瓣酱，倒田螺大火翻 2 分钟；倒啤酒没过煮 10 分钟，下紫苏叶收汁', tip: '尾尖必须剪掉，不然吸不出来' } },
+    { id: 'd194', cat: '夜宵', emoji: '🍲', name: '海鲜砂锅粥', desc: '等你回家的那锅粥', price: 26, tag: '', r: { t: 60, lv: '中等', ing: '大米、虾、干贝、姜丝、葱花、白胡椒、香油', steps: '大米洗净加一点油和盐腌 20 分钟；砂锅水开下米，大火煮开转小火熬 30 分钟，其间顺一个方向搅两次防粘底；下虾和干贝再煮 8 分钟到米粒开花；加盐白胡椒和姜丝，关火淋香油撒葱花', tip: '砂锅底垫一把瓷勺，熬多久都不糊' } },
+    { id: 'd195', cat: '夜宵', emoji: '🦪', name: '烤生蚝', desc: '一口一个，蒜香到犯规', price: 36, tag: '', r: { t: 18, lv: '简单', ing: '生蚝、蒜末、粉丝、小米辣、葱花、生抽、蚝油', steps: '生蚝用刷子刷净外壳，撬开只留一半壳；粉丝泡软剪短垫在蚝肉下面；一半蒜末小火炸到金黄，和生蒜末加生抽蚝油小米辣拌成蒜蓉酱铺上；烤箱 200 度烤 8 分钟，出炉撒葱花', tip: '蒜一半生一半熟，香才有层次' } },
+    { id: 'd196', cat: '夜宵', emoji: '🦆', name: '麻辣鸭脖', desc: '啃着啃着就靠过来了', price: 28, tag: '微辣', r: { t: 70, lv: '中等', ing: '鸭脖、干辣椒、花椒、八角、桂皮、生抽、冰糖、姜', steps: '鸭脖冷水下锅焯 5 分钟，捞出冲净浮沫；锅里炒香干辣椒花椒八角桂皮和姜，加生抽冰糖和水烧开；下鸭脖小火卤 40 分钟，关火再泡 30 分钟；捞出斩段，淋一勺卤汁', tip: '泡的时间比卤的时间更决定入味' } },
+    { id: 'd197', cat: '夜宵', emoji: '🍠', name: '烤红薯', desc: '捧在手里，暖到心里', price: 8, tag: '甜', r: { t: 50, lv: '简单', ing: '红薯、黄油、蜂蜜、黑芝麻', steps: '红薯洗净擦干，挑细长的更容易熟透；烤箱 200 度烤 40 分钟，中途翻一次面；切开一道口，抹黄油淋蜂蜜撒黑芝麻；回炉再烤 5 分钟到表面微焦', tip: '挑细长的红薯，粗的容易外焦里生' } },
+    { id: 'd198', cat: '夜宵', emoji: '🍢', name: '烤面筋', desc: '五块钱的快乐分你一半', price: 6, tag: '', r: { t: 12, lv: '简单', ing: '面筋串、孜然粉、辣椒面、白芝麻、蒜蓉酱、油', steps: '面筋串用刀斜划几道口子，方便入味；表面刷一层油，空气炸锅 190 度烤 6 分钟；翻面刷蒜蓉酱，撒孜然粉和辣椒面；再烤 3 分钟到边缘微焦，撒白芝麻', tip: '划口再烤，酱才进得去' } },
+    { id: 'd199', cat: '夜宵', emoji: '🐑', name: '羊肉汤', desc: '喝完这碗，冬天就短了', price: 28, tag: '', r: { t: 90, lv: '中等', ing: '羊腿肉、白萝卜、姜、葱、白胡椒、香菜、盐', steps: '羊肉切块冷水下锅焯 5 分钟，捞出冲净；加姜葱和足量开水，大火煮开撇沫转小火炖 60 分钟；下白萝卜块再炖 25 分钟到萝卜透明；加盐和白胡椒，撒香菜葱花', tip: '全程只加开水，加冷水肉会柴' } },
+    { id: 'd200', cat: '夜宵', emoji: '🍝', name: '炒面', desc: '锅气足，像夜市的灯', price: 14, tag: '', r: { t: 12, lv: '中等', ing: '面条、豆芽、鸡蛋、青菜、生抽、老抽、蒜', steps: '面条煮到八分熟捞出过冷水，沥干拌一点油；热锅热油炒散鸡蛋盛出；大火下面条快炒，沿锅边淋生抽老抽；下豆芽青菜和鸡蛋翻 30 秒，出锅前撒蒜末', tip: '面一定沥干，带水只会炒成糊' } },
+  ];
+
+  const DEFAULT_DISHES = DISHES_RAW.map((d) => ({
+    ...d,
+    r: d.r ? { ...d.r, ing: d.r.ing.split('、'), steps: d.r.steps.split('；') } : null,
+  }));
+
+  const state = {
+    profile: { a: '我', b: '你', avatarA: '🐰', avatarB: '🐻' },
+    dears: '今晚想吃点什么呀 🍽️',
+    role: 'orderer',
+    tab: 'menu',
+    cat: '全部',
+    menu: null,
+    menuVersion: MENU_VERSION,
+    removedIds: [],
+    recipeQuery: '',
+    recipeCat: '全部',
+    cart: {},
+    orders: [],
+  };
+
+  function load() {
+    let raw = null;
+    try { raw = localStorage.getItem(KEY); } catch {}
+    if (!raw) { state.menu = clone(DEFAULT_DISHES); state.menuVersion = MENU_VERSION; return; }
+    try {
+      const s = JSON.parse(raw);
+      state.profile = { ...state.profile, ...(s.profile || {}) };
+      state.menu = Array.isArray(s.menu) && s.menu.length ? s.menu : clone(DEFAULT_DISHES);
+      state.cart = s.cart || {};
+      state.orders = Array.isArray(s.orders) ? s.orders : [];
+      state.removedIds = Array.isArray(s.removedIds) ? s.removedIds : [];
+      state.menuVersion = Number(s.menuVersion) || 1;
+
+      // 老数据自动补齐新版本新增的菜（保留用户自己的改动与删除记录）
+      if (state.menuVersion < MENU_VERSION) {
+        const have = new Set(state.menu.map((d) => d.id));
+        const gone = new Set(state.removedIds);
+        const dmap = new Map(DEFAULT_DISHES.map((d) => [d.id, d]));
+        // 老菜也补上做法（用户自己加的菜不动）
+        for (const d of state.menu) {
+          const def = dmap.get(d.id);
+          if (!d.r && def && def.r) d.r = def.r;
+        }
+        for (const d of DEFAULT_DISHES) {
+          if (!have.has(d.id) && !gone.has(d.id)) state.menu.push({ ...d });
+        }
+        state.menuVersion = MENU_VERSION;
+        save();
+      }
+    } catch {
+      state.menu = clone(DEFAULT_DISHES);
+      state.menuVersion = MENU_VERSION;
+    }
+  }
+  function save() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify({
+        profile: state.profile, menu: state.menu, cart: state.cart, orders: state.orders,
+        menuVersion: state.menuVersion, removedIds: state.removedIds,
+      }));
+    } catch {}
+  }
+
+  /* ─────────────── 小工具 ─────────────── */
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const money = (n) => (Math.round(n * 100) / 100).toString().replace(/\.0+$/, '');
+
+  /* ─────────────── 兼容层（老 Safari / 无痕模式） ─────────────── */
+  function clone(v) {
+    if (typeof structuredClone === 'function') return structuredClone(v);
+    return JSON.parse(JSON.stringify(v));
+  }
+
+  function showFatal(msg) {
+    const box = document.getElementById('fatal');
+    const pre = document.getElementById('fatalMsg');
+    if (!box || !pre) return;
+    pre.textContent = String(msg || '未知错误').slice(0, 600);
+    box.hidden = false;
+  }
+
+  let lsOk = true;
+  try {
+    localStorage.setItem('__probe__', '1');
+    localStorage.removeItem('__probe__');
+  } catch {
+    lsOk = false;
+  }
+
+  window.addEventListener('error', (e) => {
+    if (e && e.message) showFatal(e.message + '\n' + (e.filename || '') + ':' + (e.lineno || ''));
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    const r = e && e.reason;
+    showFatal((r && r.message) || String(r));
+  });
+
+  let toastTimer = 0;
+  function toast(msg, bad = false, ms = 1600) {
+    const el = $('#toast');
+    el.textContent = msg;
+    el.classList.toggle('bad', !!bad);
+    el.classList.add('on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('on'), ms);
+  }
+
+  function flyHeart(fromEl, emoji = '💗') {
+    const r = fromEl.getBoundingClientRect();
+    const f = document.createElement('div');
+    f.className = 'fly';
+    f.textContent = emoji;
+    f.style.left = r.left + r.width / 2 - 8 + 'px';
+    f.style.top = r.top + 'px';
+    document.body.appendChild(f);
+    setTimeout(() => f.remove(), 750);
+  }
+
+  const cartCount = () => Object.values(state.cart).reduce((a, b) => a + b, 0);
+  const cartTotal = () => Object.entries(state.cart).reduce((sum, [id, q]) => {
+    const d = state.menu.find((x) => x.id === id);
+    return sum + (d ? d.price * q : 0);
+  }, 0);
+
+  function orderText(o) {
+    const who = o.by === 'chef' ? state.profile.b : state.profile.a;
+    const items = o.items.map((i) => `${i.emoji} ${i.name} ×${i.qty}`).join('  ');
+    return [
+      `🍽️ ${who} 点的菜：`,
+      items,
+      `合计 ${o.total} 元`,
+      o.time ? `预计 ${o.time} 开饭` : '',
+      o.note ? `备注：${o.note}` : '',
+      '—— 我们的小厨房',
+    ].filter(Boolean).join('\n');
+  }
+
+  /* ─────────────── 渲染：菜单 ─────────────── */
+  function renderMenu() {
+    const cats = ['全部', ...CATS.filter((c) => state.menu.some((d) => d.cat === c))];
+    const list = state.cat === '全部' ? state.menu : state.menu.filter((d) => d.cat === state.cat);
+
+    const catHtml = cats.map((c) => {
+      const n = c === '全部' ? state.menu.length : state.menu.filter((d) => d.cat === c).length;
+      return `<button class="cat ${state.cat === c ? 'on' : ''}" data-cat="${esc(c)}">${esc(c)}<span class="n">${n}</span></button>`;
+    }).join('');
+
+    const dishHtml = list.map((d) => {
+      const q = state.cart[d.id] || 0;
+      return `<article class="dish" data-id="${esc(d.id)}">
+        <div class="thumb">${esc(d.emoji || '🍽️')}</div>
+        <div class="info">
+          <div class="name">${esc(d.name)}${d.tag ? ` <span class="tag ${d.tag === '招牌' ? 'hot' : ''}">${esc(d.tag)}</span>` : ''}</div>
+          <div class="desc">${esc(d.desc || '')}</div>
+          <div class="meta"><span class="price">${money(d.price)}<small> 元</small></span>
+            ${state.role === 'chef' && d.r ? `<button class="howto" data-recipe="${esc(d.id)}">做法 · ${d.r.t}分钟</button>` : ''}</div>
+        </div>
+        ${q > 0
+          ? `<div class="qty"><button data-act="minus">−</button><span class="v">${q}</span><button data-act="plus">+</button></div>`
+          : `<button class="add" data-act="plus">+</button>`}
+      </article>`;
+    }).join('');
+
+    const chefHint = state.role === 'chef'
+      ? `<div class="section-title">今天你掌勺 · 慢慢来，不着急</div>` : '';
+
+    $('#view').innerHTML = chefHint + `<div class="cats">${catHtml}</div>` +
+      (list.length ? dishHtml : `<div class="empty"><div class="big">🍽️</div>这个分类还没有菜，去设置里加一道吧</div>`);
+
+    syncCartBar();
+    syncBadge();
+  }
+
+  function syncCartBar() {
+    const n = cartCount();
+    const bar = $('#cartbar');
+    bar.classList.toggle('show', n > 0 && state.tab === 'menu');
+    $('#cartSum').innerHTML = `已选 <b>${n}</b> 道 · 合计 <b>${money(cartTotal())}</b> 元`;
+  }
+
+  /* ─────────────── 渲染：订单 ─────────────── */
+  const STATUS_TEXT = { pending: '等 TA 接单', cooking: '正在做', done: '已完成' };
+
+  function renderOrders() {
+    if (!state.orders.length) {
+      $('#view').innerHTML = `<div class="empty"><div class="big">🧾</div>还没有订单<br/>去菜单点几道菜吧</div>`;
+      syncBadge();
+      return;
+    }
+    const html = state.orders.map((o) => {
+      const pend = o.status === 'pending';
+      const items = o.items.map((i) => {
+        const rid = i.id || (state.menu.find((m) => m.name === i.name) || {}).id;
+        const dish = rid ? state.menu.find((m) => m.id === rid) : null;
+        const can = state.role === 'chef' && dish && dish.r;
+        const inner = `${esc(i.emoji)} ${esc(i.name)} ×${i.qty}` +
+          (can ? ` <span class="rt">做法</span>` : '');
+        return can
+          ? `<button class="pill tap" data-recipe="${esc(rid)}">${inner}</button>`
+          : `<span class="pill">${inner}</span>`;
+      }).join('');
+      const chefBtns = state.role === 'chef'
+        ? (pend ? `<button class="mini solid" data-oid="${o.id}" data-act="accept">接单开火</button>`
+                : o.status === 'cooking' ? `<button class="mini solid" data-oid="${o.id}" data-act="done">做好了 🍲</button>` : '')
+        : '';
+      const howtoAll = state.role === 'chef' && o.items.length
+        ? `<div class="howto-row">👨‍🍳 点菜名看做法：${o.items.map((i) => {
+            const rid = i.id || (state.menu.find((m) => m.name === i.name) || {}).id;
+            const dish = rid ? state.menu.find((m) => m.id === rid) : null;
+            return dish && dish.r
+              ? `<button class="mini" data-recipe="${esc(rid)}">${esc(dish.name)} · ${dish.r.t}分钟</button>`
+              : '';
+          }).join('')}</div>`
+        : '';
+      return `<article class="order">
+        <div class="head">
+          <span class="status ${o.status}">${STATUS_TEXT[o.status]}</span>
+          <span class="time">${esc(o.at)}${o.time ? ' · ' + esc(o.time) : ''}</span>
+        </div>
+        <div class="items">${items}</div>
+        ${o.note ? `<div class="note">💌 ${esc(o.note)}</div>` : ''}
+        ${howtoAll}
+        <div class="foot">
+          <span class="total">${money(o.total)} 元</span>
+          <button class="mini" data-oid="${o.id}" data-act="copy">复制文案</button>
+          ${chefBtns}
+          <button class="mini" data-oid="${o.id}" data-act="del">删除</button>
+        </div>
+      </article>`;
+    }).join('');
+    $('#view').innerHTML = `<div class="section-title">共 ${state.orders.length} 单</div>` + html;
+    syncBadge();
+  }
+
+  /* ─────────────── 渲染：菜谱 ─────────────── */
+  function renderRecipes() {
+    const q = (state.recipeQuery || '').trim();
+    const cat = state.recipeCat || '全部';
+
+    const withR = state.menu.filter((d) => d && d.r);
+    const cats = ['全部', ...CATS.filter((c) => withR.some((d) => d.cat === c))];
+    const list = state.menu.filter((d) => {
+      if (cat !== '全部' && d.cat !== cat) return false;
+      if (!q) return true;
+      const hay = (d.name + ' ' + (d.desc || '') + ' ' + (d.r ? d.r.ing.join(' ') : '')).toLowerCase();
+      return hay.includes(q.toLowerCase());
+    });
+
+    const catHtml = cats.map((c) => {
+      const n = c === '全部' ? withR.length : withR.filter((d) => d.cat === c).length;
+      return `<button class="cat ${cat === c ? 'on' : ''}" data-rcat="${esc(c)}">${esc(c)}<span class="n">${n}</span></button>`;
+    }).join('');
+
+    const rows = list.map((d) => {
+      const has = !!(d.r && d.r.steps && d.r.steps.length);
+      return `<article class="rx${has ? '' : ' plain'}" ${has ? `data-recipe="${esc(d.id)}"` : ''}>
+        <span class="rx-emoji">${esc(d.emoji || '🍽️')}</span>
+        <div class="rx-main">
+          <div class="rx-name">${esc(d.name)}<span class="rx-cat">${esc(d.cat)}</span></div>
+          <div class="rx-meta">${has
+            ? `${d.r.t} 分钟 · ${esc(d.r.lv || '简单')} · ${d.r.steps.length} 步 · ${d.r.ing.length} 样食材`
+            : '还没有写做法，去设置里补一下'}</div>
+        </div>
+        <span class="rx-go">${has ? '看做法 ›' : ''}</span>
+      </article>`;
+    }).join('');
+
+    $('#view').innerHTML = `
+      <div class="rx-search">
+        <input id="rxInput" type="text" placeholder="搜菜名、食材，比如「鸡」「土豆」" value="${esc(q)}" autocomplete="off" />
+        ${q ? '<button class="rx-clear" id="rxClear">✕</button>' : ''}
+      </div>
+      <div class="cats">${catHtml}</div>
+      <div class="section-title">共 ${list.length} 道 · ${state.role === 'chef' ? '点菜名看完整制作过程' : '点任意一道看制作过程'}</div>
+      ${list.length ? rows : `<div class="empty"><div class="big">📖</div>没找到「${esc(q)}」相关的菜</div>`}`;
+  }
+
+  function syncBadge() {
+    const n = state.orders.filter((o) => o.status === 'pending' || o.status === 'cooking').length;
+    const b = $('#orderBadge');
+    b.hidden = n === 0;
+    b.textContent = String(n);
+  }
+
+  /* ─────────────── 渲染：设置 ─────────────── */
+  const AVATARS = ['🐰', '🐻', '🐱', '🐶', '🦊', '🐼', '🐧', '🍓', '🌙', '⭐'];
+
+  function renderSettings() {
+    const list = state.menu.map((d) => `
+      <div class="dish-edit">
+        <span class="e">${esc(d.emoji || '🍽️')}</span>
+        <span class="n">${esc(d.name)}<small style="color:#b9a4a1"> · ${esc(d.cat)}</small></span>
+        <span class="p">${money(d.price)}</span>
+        <button class="x" data-edit="${d.id}">✎</button>
+        <button class="x" data-del="${d.id}">✕</button>
+      </div>`).join('');
+
+    $('#view').innerHTML = `
+      <div class="panel">
+        <h4>我们俩</h4>
+        <div class="field"><label>点菜的人叫</label><input type="text" id="nameA" value="${esc(state.profile.a)}" placeholder="我" /></div>
+        <div class="avatar-pick" id="avaA">${AVATARS.map((a) => `<button data-a="${a}" class="${state.profile.avatarA === a ? 'on' : ''}">${a}</button>`).join('')}</div>
+        <div class="field" style="margin-top:14px"><label>掌勺的人叫</label><input type="text" id="nameB" value="${esc(state.profile.b)}" placeholder="你" /></div>
+        <div class="avatar-pick" id="avaB">${AVATARS.map((a) => `<button data-b="${a}" class="${state.profile.avatarB === a ? 'on' : ''}">${a}</button>`).join('')}</div>
+        <button class="btn-ghost" id="saveProfile" style="margin-top:14px">保存称呼</button>
+      </div>
+
+      <div class="panel">
+        <h4>菜单管理 · ${state.menu.length} 道</h4>
+        <div style="max-height:40vh;overflow:auto">${list}</div>
+        <button class="btn-ghost" id="addDish" style="margin-top:10px">＋ 添加一道菜</button>
+      </div>
+
+      <div class="panel">
+        <h4>数据</h4>
+        <div class="kv"><span>当前版本</span><span style="color:#8d7a78">${esc(BUILD)} · v${state.menuVersion} · ${state.menu.length} 道菜</span></div>
+        <div class="kv"><span>导出备份</span><button class="mini" id="exportData">导出</button></div>
+        <div class="kv"><span>恢复默认菜单</span><button class="mini" id="resetMenu">恢复</button></div>
+        <div class="kv"><span>清空全部数据</span><button class="mini" id="resetAll" style="color:#e0536b">清空</button></div>
+        <div style="font-size:11.5px;color:#b9a4a1;margin-top:8px">
+          数据只存在这台手机/电脑的浏览器里，不上传服务器。<br/>
+          看不到新菜时先看上面这行：版本不是最新，说明手上这份 html 文件还是旧的，重新发一份新的即可。
+        </div>
+      </div>`;
+  }
+
+  /* ─────────────── 事件 ─────────────── */
+  function render() {
+    if (state.tab === 'menu') renderMenu();
+    else if (state.tab === 'recipes') renderRecipes();
+    else if (state.tab === 'orders') renderOrders();
+    else renderSettings();
+    $('#hello').innerHTML = state.role === 'chef'
+      ? `${esc(state.profile.avatarB)} <b>${esc(state.profile.b)}</b>，今天你掌勺，点单的人已经饿了`
+      : `${esc(state.profile.avatarA)} <b>${esc(state.profile.a)}</b>，今晚想吃点什么`;
+    $('#brandText').textContent = `${state.profile.avatarA} ${state.profile.a} & ${state.profile.avatarB} ${state.profile.b} 的小厨房`;
+    document.querySelectorAll('#tabbar button').forEach((b) => b.classList.toggle('on', b.dataset.tab === state.tab));
+    document.querySelectorAll('#whoSwitch button').forEach((b) => b.classList.toggle('on', b.dataset.role === state.role));
+    syncCartBar();
+    syncBadge();
+  }
+
+  function addItem(id, el) {
+    state.cart[id] = (state.cart[id] || 0) + 1;
+    save();
+    if (el) flyHeart(el, '💗');
+    if (state.tab === 'menu') renderMenu(); else render();
+  }
+  function subItem(id) {
+    if (!state.cart[id]) return;
+    state.cart[id] -= 1;
+    if (state.cart[id] <= 0) delete state.cart[id];
+    save();
+    renderMenu();
+  }
+
+  function openSheet(id) {
+    $(id).classList.add('on');
+    if (id === '#orderSheet') $('#orderMask').classList.add('on');
+    if (id === '#dishSheet') $('#dishMask').classList.add('on');
+    if (id === '#recipeSheet') $('#recipeMask').classList.add('on');
+  }
+  function closeSheet(id) {
+    $(id).classList.remove('on');
+    if (id === '#orderSheet') $('#orderMask').classList.remove('on');
+    if (id === '#dishSheet') $('#dishMask').classList.remove('on');
+    if (id === '#recipeSheet') $('#recipeMask').classList.remove('on');
+  }
+
+  /* ─────────────── 掌勺教程 ─────────────── */
+  let recipeDishId = null;
+
+  function openRecipe(id) {
+    const d = state.menu.find((x) => x.id === id);
+    if (!d) return;
+    if (!d.r) {
+      toast('这道菜还没有教程，去设置里补一下吧', true, 2600);
+      return;
+    }
+    recipeDishId = id;
+    const r = d.r;
+    $('#rEmoji').textContent = d.emoji || '🍽️';
+    $('#rName').textContent = d.name;
+    $('#rMeta').innerHTML = `约 ${r.t} 分钟 · <span class="lvl">${esc(r.lv || '简单')}</span> · ${r.steps.length} 步`;
+    $('#rIng').innerHTML = r.ing.map((x) => `<span class="ing">${esc(x)}</span>`).join('');
+    $('#rSteps').innerHTML = r.steps.map((s, i) =>
+      `<li data-i="${i}"><span class="no">${i + 1}</span><span class="txt">${esc(s)}</span></li>`).join('');
+    $('#rTip').innerHTML = r.tip ? `💡 ${esc(r.tip)}` : '';
+    updateRecipeProgress();
+    openSheet('#recipeSheet');
+  }
+
+  function toggleStep(li) {
+    li.classList.toggle('done');
+    updateRecipeProgress();
+  }
+
+  function updateRecipeProgress() {
+    const lis = [...document.querySelectorAll('#rSteps li')];
+    const done = lis.filter((x) => x.classList.contains('done')).length;
+    const txt = document.querySelector('#rProg');
+    if (txt) txt.textContent = `${done}/${lis.length}`;
+    const bar = document.querySelector('#rBar i');
+    if (bar) bar.style.width = lis.length ? `${(done / lis.length) * 100}%` : '0%';
+  }
+
+  function recipeText(d) {
+    const r = d.r;
+    return [
+      `【${d.name}】约 ${r.t} 分钟 · ${r.lv}`,
+      '',
+      '食材：' + r.ing.join('、'),
+      '',
+      ...r.steps.map((s, i) => `${i + 1}. ${s}`),
+      r.tip ? `\n小贴士：${r.tip}` : '',
+    ].filter(Boolean).join('\n');
+  }
+
+  let editingId = null;
+
+  function openDishEditor(id) {
+    const d = id ? state.menu.find((x) => x.id === id) : null;
+    editingId = id || null;
+    $('#dishTitle').textContent = d ? '编辑菜品' : '添加一道菜';
+    $('#dName').value = d?.name || '';
+    $('#dEmoji').value = d?.emoji || '';
+    $('#dDesc').value = d?.desc || '';
+    $('#dPrice').value = d?.price ?? '';
+    $('#dCat').innerHTML = CATS.map((c) => `<option ${d?.cat === c ? 'selected' : ''}>${c}</option>`).join('');
+    $('#dTime').value = d?.r?.t ?? '';
+    $('#dLv').value = d?.r?.lv || '简单';
+    $('#dIng').value = (d?.r?.ing || []).join('、');
+    $('#dSteps').value = (d?.r?.steps || []).join('\n');
+    $('#dTip').value = d?.r?.tip || '';
+    openSheet('#dishSheet');
+  }
+
+  document.addEventListener('click', (e) => {
+    // 教程步骤勾选
+    const stepEl = e.target.closest('#rSteps li');
+    if (stepEl) { toggleStep(stepEl); return; }
+
+    const t = e.target.closest('button, .dish, .rx');
+    if (!t) return;
+
+    // 看做法（必须在 .dish 判断之前，否则会误加成购物车）
+    if (t.dataset.recipe) { openRecipe(t.dataset.recipe); return; }
+
+    // 菜谱页：分类筛选 / 清空搜索
+    if (t.dataset.rcat !== undefined) {
+      state.recipeCat = t.dataset.rcat;
+      renderRecipes();
+      return;
+    }
+    if (t.id === 'rxClear') {
+      state.recipeQuery = '';
+      renderRecipes();
+      return;
+    }
+
+    // 分类
+    if (t.dataset.cat !== undefined) {
+      state.cat = t.dataset.cat;
+      renderMenu();
+      return;
+    }
+
+    // 菜品加减
+    const dishEl = t.closest('.dish');
+    if (dishEl) {
+      const id = dishEl.dataset.id;
+      const act = t.dataset.act || 'plus';
+      if (act === 'plus') addItem(id, t);
+      else if (act === 'minus') subItem(id);
+      return;
+    }
+
+    // 顶栏角色
+    if (t.dataset.role) {
+      state.role = t.dataset.role;
+      render();
+      return;
+    }
+
+    // 底部 tab
+    if (t.dataset.tab) {
+      state.tab = t.dataset.tab;
+      render();
+      return;
+    }
+
+    // 订单操作
+    if (t.dataset.act && t.dataset.oid) {
+      const o = state.orders.find((x) => x.id === t.dataset.oid);
+      if (!o) return;
+      const act = t.dataset.act;
+      if (act === 'accept') { o.status = 'cooking'; save(); renderOrders(); toast('已接单，开火 🔥'); }
+      if (act === 'done') { o.status = 'done'; save(); renderOrders(); toast('上菜啦 🍲'); }
+      if (act === 'del') { state.orders = state.orders.filter((x) => x.id !== o.id); save(); renderOrders(); toast('已删除'); }
+      if (act === 'copy') {
+        const text = orderText(o);
+        copy(text).then((ok) => toast(ok ? '文案已复制，去微信粘贴给 TA' : '复制失败，长按选择文本吧'));
+      }
+      return;
+    }
+
+    // 设置页
+    const avaA = t.dataset.a;
+    const avaB = t.dataset.b;
+    if (avaA) { state.profile.avatarA = avaA; save(); renderSettings(); return; }
+    if (avaB) { state.profile.avatarB = avaB; save(); renderSettings(); return; }
+    if (t.dataset.edit) { openDishEditor(t.dataset.edit); return; }
+    if (t.dataset.del) {
+      state.menu = state.menu.filter((x) => x.id !== t.dataset.del);
+      delete state.cart[t.dataset.del];
+      if (!state.removedIds.includes(t.dataset.del)) state.removedIds.push(t.dataset.del);
+      save(); renderSettings(); toast('已删除这道菜');
+      return;
+    }
+    if (t.id === 'saveProfile') {
+      state.profile.a = ($('#nameA').value || '我').slice(0, 8);
+      state.profile.b = ($('#nameB').value || '你').slice(0, 8);
+      save(); render(); toast('称呼已更新');
+      return;
+    }
+    if (t.id === 'addDish') { openDishEditor(null); return; }
+    if (t.id === 'exportData') {
+      const blob = new Blob([JSON.stringify({ profile: state.profile, menu: state.menu, orders: state.orders }, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'couple-menu-backup.json';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      toast('已导出备份');
+      return;
+    }
+    if (t.id === 'resetMenu') {
+      state.menu = clone(DEFAULT_DISHES);
+      state.removedIds = [];
+      state.menuVersion = MENU_VERSION;
+      save(); renderSettings(); toast('菜单已恢复默认');
+      return;
+    }
+    if (t.id === 'resetAll') {
+      if (!confirm('清空全部数据？菜单、订单、称呼都会重置。')) return;
+      try { localStorage.removeItem(KEY); } catch {}
+      state.menu = clone(DEFAULT_DISHES);
+      state.orders = []; state.cart = {}; state.removedIds = [];
+      state.menuVersion = MENU_VERSION;
+      state.profile = { a: '我', b: '你', avatarA: '🐰', avatarB: '🐻' };
+      save(); render(); toast('已清空');
+      return;
+    }
+
+    // 弹层
+    if (t.id === 'goOrder') { openOrder(); return; }
+    if (t.id === 'cancelOrder') { closeSheet('#orderSheet'); return; }
+    if (t.id === 'submitOrder') { submitOrder(); return; }
+    if (t.id === 'saveDish') { saveDish(); return; }
+    if (t.id === 'cancelDish') { closeSheet('#dishSheet'); return; }
+
+    // 教程弹层
+    if (t.id === 'rClose' || t.id === 'rClose2') { closeSheet('#recipeSheet'); return; }
+    if (t.id === 'rCopy') {
+      const d = recipeDishId ? state.menu.find((x) => x.id === recipeDishId) : null;
+      if (!d || !d.r) return;
+      copy(recipeText(d)).then((ok) => toast(ok ? '做法已复制，可以发给自己照着做' : '复制失败', !ok));
+      return;
+    }
+  });
+
+  $('#orderMask').addEventListener('click', () => closeSheet('#orderSheet'));
+  $('#dishMask').addEventListener('click', () => closeSheet('#dishSheet'));
+  $('#recipeMask').addEventListener('click', () => closeSheet('#recipeSheet'));
+
+  // 菜谱搜索：重渲染后把焦点和光标还回去
+  document.addEventListener('input', (e) => {
+    if (e.target.id !== 'rxInput') return;
+    state.recipeQuery = e.target.value;
+    const pos = e.target.selectionStart;
+    renderRecipes();
+    const el = document.querySelector('#rxInput');
+    if (el) { el.focus(); try { el.setSelectionRange(pos, pos); } catch {} }
+  });
+
+  function openOrder() {
+    if (!cartCount()) return toast('先点几道菜吧');
+    const items = Object.entries(state.cart).map(([id, q]) => {
+      const d = state.menu.find((x) => x.id === id);
+      return `<div class="kv"><span>${esc(d.emoji)} ${esc(d.name)} ×${q}</span><span>${money(d.price * q)} 元</span></div>`;
+    }).join('');
+    $('#orderPreview').innerHTML =
+      `<div class="panel" style="margin:0 0 6px;box-shadow:none;border:1px solid var(--line)">${items}
+        <div class="kv" style="border:0"><b>合计</b><b style="color:var(--pink)">${money(cartTotal())} 元</b></div></div>`;
+    const d = new Date();
+    $('#orderTime').value = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    openSheet('#orderSheet');
+  }
+
+  function submitOrder() {
+    const items = Object.entries(state.cart).map(([id, q]) => {
+      const d = state.menu.find((x) => x.id === id);
+      return { id, name: d.name, emoji: d.emoji, qty: q, price: d.price };
+    });
+    if (!items.length) return toast('还没选菜');
+
+    const d = new Date();
+    const at = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    const order = {
+      id: 'o' + Date.now().toString(36),
+      at,
+      time: $('#orderTime').value.trim(),
+      note: $('#orderNote').value.trim(),
+      total: cartTotal(),
+      items,
+      status: 'pending',
+      by: state.role,
+    };
+    state.orders.unshift(order);
+    state.cart = {};
+    save();
+    closeSheet('#orderSheet');
+    $('#orderNote').value = '';
+    state.tab = 'orders';
+    render();
+    toast('已送到 TA 的手机上 💌');
+    setTimeout(() => {
+      copy(orderText(order)).then((ok) => { if (ok) toast('文案也复制好了，可以直接发微信'); });
+    }, 900);
+  }
+
+  function saveDish() {
+    const name = $('#dName').value.trim();
+    if (!name) return toast('菜名不能为空');
+
+    const steps = $('#dSteps').value.split('\n').map((s) => s.trim()).filter(Boolean);
+    const ing = $('#dIng').value.split(/[、,，]/).map((s) => s.trim()).filter(Boolean);
+    const data = {
+      name,
+      emoji: ($('#dEmoji').value.trim() || '🍽️').slice(0, 4),
+      desc: $('#dDesc').value.trim(),
+      price: Number($('#dPrice').value || 0),
+      cat: $('#dCat').value || '拿手菜',
+      tag: '',
+    };
+    // 只有填了步骤才带做法，否则掌勺看不到教程入口
+    const r = steps.length
+      ? {
+          t: Number($('#dTime').value) || 15,
+          lv: $('#dLv').value || '简单',
+          ing: ing.length ? ing : ['看心情'],
+          steps,
+          tip: $('#dTip').value.trim(),
+        }
+      : null;
+    data.r = r;
+
+    if (editingId) {
+      const d = state.menu.find((x) => x.id === editingId);
+      Object.assign(d, data);
+    } else {
+      state.menu.push({ id: 'd' + Date.now().toString(36), ...data });
+    }
+    save();
+    closeSheet('#dishSheet');
+    renderSettings();
+    toast(r ? '已保存，做法也存好了' : '已保存（没填做法，掌勺看不到教程）');
+  }
+
+  async function copy(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand('copy');
+        ta.remove();
+        return ok;
+      } catch { return false; }
+    }
+  }
+
+  /* ─────────────── 启动 ─────────────── */
+  try {
+    load();
+    render();
+    if (!lsOk) toast('浏览器禁止了本地存储，这次的改动不会被记住（可能是无痕模式）', true, 5200);
+  } catch (err) {
+    showFatal(err && err.stack ? err.stack : err);
+    throw err;
+  }
+
+  // 给测试与调试用的一点点内省（不影响使用）
+  window.__COUPLE__ = {
+    stats: () => ({
+      dishes: state.menu.length,
+      withRecipe: state.menu.filter((d) => d && d.r && Array.isArray(d.r.steps) && d.r.steps.length).length,
+      cats: CATS.length,
+      orders: state.orders.length,
+      cart: cartCount(),
+      version: state.menuVersion,
+    }),
+    defaults: DEFAULT_DISHES.length,
+    dish: (key) => state.menu.find((d) => d.id === key || d.name === key) || null,
+  };
+})();
+</script>
+<script>
+/* ES5 兜底：如果 1.5 秒后应用还没初始化，说明脚本没跑起来 */
+setTimeout(function () {
+  if (window.__COUPLE__) return;
+  var box = document.getElementById('fatal');
+  var pre = document.getElementById('fatalMsg');
+  if (!box || !pre || !box.hidden) return;
+  pre.textContent = '脚本没有运行起来。\n可能是：iOS/Safari 版本太旧、开了无痕模式、或者这个 html 文件没有完整加载。';
+  box.hidden = false;
+}, 1500);
+</script>
+</body>
+</html>
