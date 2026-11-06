@@ -963,7 +963,7 @@
       <div class="panel">
         <h4>两台手机同步</h4>
         <div class="kv"><span>房间码</span><span style="font-family:monospace;color:#e0536b">${state.room ? esc(state.room) : '未设置'}</span></div>
-        <div class="kv"><span>状态</span><span style="color:#8d7a78">${esc(state.syncState)}</span></div>
+        <div class="kv"><span>状态</span><span id="syncStatus" style="color:#8d7a78">${esc(state.syncState)}</span></div>
         <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
           <button class="mini solid" id="syncNew">生成房间码</button>
           <button class="mini" id="syncCopy">复制邀请链接</button>
@@ -1042,6 +1042,12 @@
     return changed;
   }
 
+  function setSyncState(msg) {
+    state.syncState = msg;
+    const el = document.getElementById('syncStatus');
+    if (el) el.textContent = msg;
+  }
+
   async function pushSync() {
     if (!state.syncOn || !state.room) return;
     try {
@@ -1056,9 +1062,9 @@
         body,
       });
       state.lastSyncAt = Date.now();
-      state.syncState = '已同步 ' + new Date().toLocaleTimeString('zh-CN', { hour12: false });
+      setSyncState('已同步 ' + new Date().toLocaleTimeString('zh-CN', { hour12: false }));
     } catch (e) {
-      state.syncState = '同步失败：' + (e.message || '网络错误');
+      setSyncState('同步失败：' + (e.message || '网络错误'));
     }
   }
 
@@ -1080,14 +1086,14 @@
         } catch (err) {}
       }
       state.lastSyncAt = Date.now();
-      state.syncState = '已同步 ' + new Date().toLocaleTimeString('zh-CN', { hour12: false });
+      setSyncState('已同步 ' + new Date().toLocaleTimeString('zh-CN', { hour12: false }));
       if (changed) {
         render();
         if (!silent) toast('收到对方的新订单 🍽️');
       }
       return changed;
     } catch (e) {
-      state.syncState = '同步失败：' + (e.message || '网络错误');
+      setSyncState('同步失败：' + (e.message || '网络错误'));
       return false;
     }
   }
